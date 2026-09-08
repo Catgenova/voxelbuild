@@ -74,7 +74,7 @@ namespace VoxelBuild.World
                         if (!def.IsOpaque)
                         {
                             for (int f = 0; f < 6; f++)
-                                AddFace(data, lx, ly, lz, f, def.TileFor((Direction)f), blockSize, true);
+                                AddFace(data, lx, ly, lz, f, def.TileFor((Direction)f), blockSize, true, 0);
                             continue;
                         }
 
@@ -82,10 +82,18 @@ namespace VoxelBuild.World
                         {
                             var n = p + Directions.Offsets[f];
                             if (!IsFaceVisible(world, n, sliceY)) continue;
-                            AddFace(data, lx, ly, lz, f, def.TileFor((Direction)f), blockSize, false);
+                            AddFace(data, lx, ly, lz, f, def.TileFor((Direction)f), blockSize, false, RotationFor(def, p, f));
                         }
                     }
             }
+        }
+
+        /// <summary>Per-block pseudo-random quarter-turn of a face's texture, to hide tiling repetition.</summary>
+        public static int RotationFor(BlockDefinition def, Int3 p, int face)
+        {
+            bool vertical = face == (int)Direction.PosY || face == (int)Direction.NegY;
+            if (vertical ? !def.RotateTopBottom : !def.RotateSides) return 0;
+            return (int)(Noise.HashU(p.x, p.y, p.z, 977 + face) & 3u);
         }
 
         private static bool IsFaceVisible(IBlockQuery world, Int3 neighbour, int sliceY)
@@ -95,7 +103,7 @@ namespace VoxelBuild.World
             return !BlockRegistry.IsOpaque(world.GetBlock(neighbour));
         }
 
-        private static void AddFace(MeshData data, int lx, int ly, int lz, int face, int tile, float blockSize, bool decor)
+        private static void AddFace(MeshData data, int lx, int ly, int lz, int face, int tile, float blockSize, bool decor, int rotation)
         {
             int baseIndex = data.VertexCount;
             var corners = FaceCorners[face];
@@ -119,10 +127,13 @@ namespace VoxelBuild.World
                 data.Normals.Add(normal[2]);
             }
 
-            data.Uvs.Add(u0); data.Uvs.Add(v0);
-            data.Uvs.Add(u0); data.Uvs.Add(v1);
-            data.Uvs.Add(u1); data.Uvs.Add(v1);
-            data.Uvs.Add(u1); data.Uvs.Add(v0);
+            // Corner UVs, rotated by quarter turns when the block allows it.
+            for (int i = 0; i < 4; i++)
+            {
+                int c = (i + rotation) & 3;
+                data.Uvs.Add(c == 0 || c == 1 ? u0 : u1);
+                data.Uvs.Add(c == 1 || c == 2 ? v1 : v0);
+            }
 
             data.Triangles.Add(baseIndex);
             data.Triangles.Add(baseIndex + 1);

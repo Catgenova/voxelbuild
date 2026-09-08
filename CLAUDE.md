@@ -17,6 +17,9 @@ See README.md for the design and the module map.
 - Every block/item/recipe is registered in code (`Core/Blocks.cs`, `Core/Items.cs`,
   `Core/Recipes.cs`). Adding a block: add the enum value, a `BlockDefinition`, and (if craftable)
   an `ItemType` + recipe. The atlas and UI pick it up automatically.
+- Block looks are procedural: `BlockRegistry.ApplyStyle` assigns a `SurfaceStyle` per face and
+  `World/TilePainter.cs` paints it (albedo, height, metallic, smoothness, emissive). Add a style
+  there rather than importing textures; keep painters tileable (use the periodic noise helpers).
 - The scene is generated at runtime by `GameBootstrap`. Do not hand-author prefabs; extend the
   bootstrap or the relevant renderer.
 

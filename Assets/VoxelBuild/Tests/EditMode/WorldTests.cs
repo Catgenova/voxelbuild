@@ -80,6 +80,59 @@ namespace VoxelBuild.Tests
         }
 
         [Test]
+        public void EveryTilePaintsValidPbrData()
+        {
+            AtlasLayout.EnsureInit();
+            for (int t = 0; t < AtlasLayout.TileCount; t++)
+            {
+                var tile = AtlasLayout.GetTile(t);
+                var px = TilePainter.Paint(tile, t, 16);
+                for (int i = 0; i < px.Height.Length; i++)
+                {
+                    Assert.IsFalse(float.IsNaN(px.Albedo[i].r) || float.IsNaN(px.Albedo[i].g) || float.IsNaN(px.Albedo[i].b), $"{tile.Block} {tile.FaceGroup}: NaN albedo");
+                    Assert.That(px.Height[i], Is.InRange(0f, 1f), $"{tile.Block} height");
+                    Assert.That(px.Metallic[i], Is.InRange(0f, 1f), $"{tile.Block} metallic");
+                    Assert.That(px.Smoothness[i], Is.InRange(0f, 1f), $"{tile.Block} smoothness");
+                    Assert.That(px.AO[i], Is.InRange(0f, 1f), $"{tile.Block} ao");
+                    Assert.GreaterOrEqual(px.Emissive[i].r, 0f);
+                }
+            }
+        }
+
+        [Test]
+        public void OreTilesHaveMetalAndCrystalGlows()
+        {
+            AtlasLayout.EnsureInit();
+            var gold = BlockRegistry.Get(BlockType.GoldOre);
+            var px = TilePainter.Paint(AtlasLayout.GetTile(gold.TileSide), gold.TileSide, 32);
+            float maxMetal = 0f;
+            foreach (var m in px.Metallic) maxMetal = System.Math.Max(maxMetal, m);
+            Assert.Greater(maxMetal, 0.9f, "gold nuggets are metallic");
+
+            var crystal = BlockRegistry.Get(BlockType.Crystal);
+            var cpx = TilePainter.Paint(AtlasLayout.GetTile(crystal.TileTop), crystal.TileTop, 32);
+            float glow = 0f;
+            foreach (var e in cpx.Emissive) glow += e.r + e.g + e.b;
+            Assert.Greater(glow, 0f, "crystal emits light");
+        }
+
+        [Test]
+        public void FaceRotationIsDeterministicAndRespectsFlags()
+        {
+            var stone = BlockRegistry.Get(BlockType.Stone);
+            var planks = BlockRegistry.Get(BlockType.Planks);
+            var grass = BlockRegistry.Get(BlockType.Grass);
+            var p = new Int3(3, 4, 5);
+            Assert.AreEqual(ChunkMesher.RotationFor(stone, p, 2), ChunkMesher.RotationFor(stone, p, 2));
+            Assert.AreEqual(0, ChunkMesher.RotationFor(planks, p, 2), "planks keep their grain direction");
+            Assert.AreEqual(0, ChunkMesher.RotationFor(grass, p, 0), "grass sides keep the overhang at the top");
+            bool anyRotated = false;
+            for (int i = 0; i < 32 && !anyRotated; i++)
+                anyRotated = ChunkMesher.RotationFor(stone, new Int3(i, 0, 0), 2) != 0;
+            Assert.IsTrue(anyRotated, "stone tops get rotated somewhere");
+        }
+
+        [Test]
         public void MeshDataIsConsistent()
         {
             var world = TestWorld.Flat(1, 1, 3);

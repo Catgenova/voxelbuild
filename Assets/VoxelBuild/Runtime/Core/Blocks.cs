@@ -38,6 +38,33 @@ namespace VoxelBuild.Core
         Furniture,
     }
 
+    /// <summary>Procedural surface look used by the texture painter.</summary>
+    public enum SurfaceStyle
+    {
+        Flat,
+        Dirt,
+        GrassTop,
+        GrassSide,
+        Stone,
+        Sand,
+        Gravel,
+        Clay,
+        Bedrock,
+        Ore,
+        Crystal,
+        Bark,
+        LogEnd,
+        Leaves,
+        Bush,
+        Planks,
+        Brick,
+        WorkbenchTop,
+        BedTop,
+        Fabric,
+        TorchSide,
+        TorchTop,
+    }
+
     public sealed class BlockDefinition
     {
         public BlockType Type;
@@ -68,6 +95,31 @@ namespace VoxelBuild.Core
         public float TextureNoise = 0.08f;
         /// <summary>HDR emissive colour (black = none).</summary>
         public ColorRgb Emissive = ColorRgb.Black;
+
+        public SurfaceStyle TopStyle = SurfaceStyle.Flat;
+        public SurfaceStyle SideStyle = SurfaceStyle.Flat;
+        public SurfaceStyle BottomStyle = SurfaceStyle.Flat;
+        /// <summary>Secondary colour: ore nuggets, berries, mortar, pillow.</summary>
+        public ColorRgb Accent = ColorRgb.White;
+        /// <summary>Base smoothness (0 rough .. 1 mirror) before per-pixel variation.</summary>
+        public float Smoothness = 0.15f;
+        /// <summary>Metallic value applied to the accent areas of Ore tiles.</summary>
+        public float AccentMetallic = 0f;
+        public float AccentSmoothness = 0.5f;
+        /// <summary>Allow the mesher to rotate top/bottom faces per block to hide repetition.</summary>
+        public bool RotateTopBottom;
+        /// <summary>Allow the mesher to rotate side faces per block.</summary>
+        public bool RotateSides;
+
+        public SurfaceStyle StyleFor(Direction face)
+        {
+            switch (face)
+            {
+                case Direction.PosY: return TopStyle;
+                case Direction.NegY: return BottomStyle;
+                default: return SideStyle;
+            }
+        }
 
         // Atlas tile indices, assigned by AtlasLayout.
         public int TileTop = -1;
@@ -247,7 +299,78 @@ namespace VoxelBuild.Core
 
         private static void Add(BlockDefinition def)
         {
+            ApplyStyle(def);
             Defs[(int)def.Type] = def;
+        }
+
+        /// <summary>Surface look per block. Kept in one place so the art direction is easy to read and tweak.</summary>
+        private static void ApplyStyle(BlockDefinition d)
+        {
+            switch (d.Type)
+            {
+                case BlockType.Bedrock:
+                    Set(d, SurfaceStyle.Bedrock, SurfaceStyle.Bedrock, SurfaceStyle.Bedrock, 0.2f, true, true); break;
+                case BlockType.Stone:
+                    Set(d, SurfaceStyle.Stone, SurfaceStyle.Stone, SurfaceStyle.Stone, 0.22f, true, true); break;
+                case BlockType.Dirt:
+                    Set(d, SurfaceStyle.Dirt, SurfaceStyle.Dirt, SurfaceStyle.Dirt, 0.08f, true, true); break;
+                case BlockType.Grass:
+                    Set(d, SurfaceStyle.GrassTop, SurfaceStyle.GrassSide, SurfaceStyle.Dirt, 0.12f, true, false);
+                    d.Accent = ColorRgb.Bytes(121, 85, 58); break;
+                case BlockType.Sand:
+                    Set(d, SurfaceStyle.Sand, SurfaceStyle.Sand, SurfaceStyle.Sand, 0.1f, true, true); break;
+                case BlockType.Gravel:
+                    Set(d, SurfaceStyle.Gravel, SurfaceStyle.Gravel, SurfaceStyle.Gravel, 0.25f, true, true); break;
+                case BlockType.Clay:
+                    Set(d, SurfaceStyle.Clay, SurfaceStyle.Clay, SurfaceStyle.Clay, 0.45f, true, true); break;
+                case BlockType.CoalOre:
+                    Set(d, SurfaceStyle.Ore, SurfaceStyle.Ore, SurfaceStyle.Ore, 0.22f, true, true);
+                    d.Accent = ColorRgb.Bytes(28, 28, 30); d.AccentMetallic = 0.1f; d.AccentSmoothness = 0.65f; break;
+                case BlockType.IronOre:
+                    Set(d, SurfaceStyle.Ore, SurfaceStyle.Ore, SurfaceStyle.Ore, 0.22f, true, true);
+                    d.Accent = ColorRgb.Bytes(205, 150, 110); d.AccentMetallic = 0.95f; d.AccentSmoothness = 0.6f; break;
+                case BlockType.GoldOre:
+                    Set(d, SurfaceStyle.Ore, SurfaceStyle.Ore, SurfaceStyle.Ore, 0.22f, true, true);
+                    d.Accent = ColorRgb.Bytes(255, 205, 80); d.AccentMetallic = 1f; d.AccentSmoothness = 0.88f; break;
+                case BlockType.Crystal:
+                    Set(d, SurfaceStyle.Crystal, SurfaceStyle.Crystal, SurfaceStyle.Crystal, 0.9f, true, true);
+                    d.Accent = ColorRgb.Bytes(200, 245, 255); d.AccentMetallic = 0.15f; d.AccentSmoothness = 0.95f; break;
+                case BlockType.Log:
+                    Set(d, SurfaceStyle.LogEnd, SurfaceStyle.Bark, SurfaceStyle.LogEnd, 0.2f, true, false);
+                    d.Accent = ColorRgb.Bytes(70, 48, 28); break;
+                case BlockType.Leaves:
+                    Set(d, SurfaceStyle.Leaves, SurfaceStyle.Leaves, SurfaceStyle.Leaves, 0.3f, true, true); break;
+                case BlockType.BerryBush:
+                    Set(d, SurfaceStyle.Bush, SurfaceStyle.Bush, SurfaceStyle.Leaves, 0.3f, true, true);
+                    d.Accent = ColorRgb.Bytes(190, 40, 80); d.AccentSmoothness = 0.7f; break;
+                case BlockType.Planks:
+                    Set(d, SurfaceStyle.Planks, SurfaceStyle.Planks, SurfaceStyle.Planks, 0.35f, false, false);
+                    d.Accent = ColorRgb.Bytes(120, 90, 55); break;
+                case BlockType.StoneBrick:
+                    Set(d, SurfaceStyle.Brick, SurfaceStyle.Brick, SurfaceStyle.Brick, 0.3f, false, false);
+                    d.Accent = ColorRgb.Bytes(150, 150, 150); break;
+                case BlockType.Workbench:
+                    Set(d, SurfaceStyle.WorkbenchTop, SurfaceStyle.Planks, SurfaceStyle.Planks, 0.3f, false, false);
+                    d.Accent = ColorRgb.Bytes(170, 170, 175); d.AccentMetallic = 0.9f; d.AccentSmoothness = 0.7f; break;
+                case BlockType.Bed:
+                    Set(d, SurfaceStyle.BedTop, SurfaceStyle.Planks, SurfaceStyle.Planks, 0.15f, false, false);
+                    d.Accent = ColorRgb.Bytes(235, 230, 220); break;
+                case BlockType.Torch:
+                    Set(d, SurfaceStyle.TorchTop, SurfaceStyle.TorchSide, SurfaceStyle.Bark, 0.3f, false, false);
+                    d.Accent = ColorRgb.Bytes(255, 170, 60); break;
+                default:
+                    break;
+            }
+        }
+
+        private static void Set(BlockDefinition d, SurfaceStyle top, SurfaceStyle side, SurfaceStyle bottom, float smoothness, bool rotTopBottom, bool rotSides)
+        {
+            d.TopStyle = top;
+            d.SideStyle = side;
+            d.BottomStyle = bottom;
+            d.Smoothness = smoothness;
+            d.RotateTopBottom = rotTopBottom;
+            d.RotateSides = rotSides;
         }
 
         public static BlockDefinition Get(BlockType type)

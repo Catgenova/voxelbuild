@@ -66,6 +66,7 @@ namespace VoxelBuild.Rendering
             mesh.SetNormals(normals);
             mesh.SetUVs(0, uvs);
             mesh.SetTriangles(data.Triangles, 0, true);
+            mesh.RecalculateTangents();
             mesh.RecalculateBounds();
 
             meshRenderer.enabled = true;

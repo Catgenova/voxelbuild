@@ -18,10 +18,14 @@ namespace VoxelBuild.World
             public ColorRgb Color;
             public float Noise;
             public ColorRgb Emissive;
+            public SurfaceStyle Style;
+            public BlockDefinition Definition;
         }
 
-        /// <summary>Each tile is 32px; the block face maps to the inner 16px so mip levels stay free of neighbour bleed.</summary>
-        public const int TilePixels = 32;
+        /// <summary>Pixels across one block face.</summary>
+        public const int FacePixels = 64;
+        /// <summary>Each tile is twice the face size; the face maps to the inner half so mip levels stay free of neighbour bleed.</summary>
+        public const int TilePixels = FacePixels * 2;
         private static readonly List<Tile> Tiles = new List<Tile>();
         private static bool initialised;
 
@@ -73,7 +77,11 @@ namespace VoxelBuild.World
 
         private static int AddTile(BlockDefinition def, Direction group, ColorRgb color)
         {
-            Tiles.Add(new Tile { Block = def.Type, FaceGroup = group, Color = color, Noise = def.TextureNoise, Emissive = def.Emissive });
+            Tiles.Add(new Tile
+            {
+                Block = def.Type, FaceGroup = group, Color = color, Noise = def.TextureNoise, Emissive = def.Emissive,
+                Style = def.StyleFor(group), Definition = def,
+            });
             return Tiles.Count - 1;
         }
     }

@@ -43,7 +43,8 @@ Runtime/
   Core/        Int3, Direction, ColorRgb, block / item / recipe registries
   World/       Chunk (16³ blocks), VoxelWorld (finite chunk grid + change events),
                Noise + WorldGenerator (terrain, ores, caves, trees, bushes),
-               AtlasLayout + ChunkMesher (culled cube meshing with a Y-slice cap)
+               AtlasLayout + TilePainter (procedural PBR faces) + ChunkMesher
+               (culled cube meshing with a Y-slice cap and per-block face rotation)
   Nav/         NavRules (clearance, step-up, fall limits), A* Pathfinder with goal
                predicates, PathFollower (smooth cell-to-cell movement)
   Sim/         GameClock, Needs, Inventory, GroundItems, Stockpiles, JobBoard
@@ -73,6 +74,13 @@ Tests/EditMode/      NUnit tests for the engine-free layers
 - **Items are physical.** Mined blocks go into the miner's pack; packs are emptied into stockpiles;
   building and crafting fetch materials from piles. Piles push up when built over and fall when
   undermined.
+- **Procedural PBR.** Every block face is painted at 64 px by `World/TilePainter.cs` into albedo,
+  height, metallic, smoothness and emissive fields, using tileable noise so faces join seamlessly.
+  The renderer turns height into a tangent-space normal map, packs an HDRP mask map (metallic, AO,
+  smoothness) and feeds them all to one Lit material. Dirt is grainy with embedded pebbles, stone is
+  cracked and mottled, ore has glossy metallic nuggets, crystal is faceted and glows, planks have
+  grain and seams, bricks have recessed mortar. Faces are randomly quarter-turned per block where the
+  art allows, so the repetition is hard to spot.
 - **HDR without hassle.** Materials are cloned from the pipeline's default Lit material so shaders are
   always included in builds. Overlays use HDRP emissive with exposure weight 0 so they read the same at
   noon and midnight.

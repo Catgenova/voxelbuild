@@ -83,6 +83,76 @@ namespace VoxelBuild.World
             return sum / norm;
         }
 
+        // ---------------------------------------------------------------- Periodic (tileable) noise
+
+        private static int Wrap(int v, int period)
+        {
+            int m = v % period;
+            return m < 0 ? m + period : m;
+        }
+
+        /// <summary>Value noise whose lattice wraps every <paramref name="period"/> units, so textures tile seamlessly.</summary>
+        public static float PeriodicValue2D(float x, float y, int period, int seed) => PeriodicValue2D(x, y, period, period, seed);
+
+        /// <summary>Tileable value noise with different lattice periods per axis (for streaks, grain and ridges).</summary>
+        public static float PeriodicValue2D(float x, float y, int periodX, int periodY, int seed)
+        {
+            int x0 = FloorToInt(x), y0 = FloorToInt(y);
+            float tx = Smooth(x - x0), ty = Smooth(y - y0);
+            int xa = Wrap(x0, periodX), xb = Wrap(x0 + 1, periodX);
+            int ya = Wrap(y0, periodY), yb = Wrap(y0 + 1, periodY);
+            float a = Hash(xa, ya, seed), b = Hash(xb, ya, seed);
+            float c = Hash(xa, yb, seed), d = Hash(xb, yb, seed);
+            float top = a + (b - a) * tx;
+            float bottom = c + (d - c) * tx;
+            return top + (bottom - top) * ty;
+        }
+
+        /// <summary>Tileable fractal noise in [0,1]. Coordinates are in lattice units over [0, period).</summary>
+        public static float PeriodicFbm2D(float x, float y, int period, int seed, int octaves, float persistence = 0.5f)
+        {
+            float sum = 0f, amp = 1f, norm = 0f, freq = 1f;
+            int p = period;
+            for (int i = 0; i < octaves; i++)
+            {
+                sum += PeriodicValue2D(x * freq, y * freq, p, seed + i * 101) * amp;
+                norm += amp;
+                amp *= persistence;
+                freq *= 2f;
+                p *= 2;
+            }
+            return sum / norm;
+        }
+
+        /// <summary>
+        /// Tileable Worley (cellular) noise: one jittered feature point per cell on a wrapping grid of
+        /// <paramref name="cells"/> x <paramref name="cells"/>. Distances are in cell units.
+        /// </summary>
+        public static void PeriodicWorley(float x, float y, int cells, int seed, out float d1, out float d2, out uint cellId)
+        {
+            int cx = FloorToInt(x), cy = FloorToInt(y);
+            d1 = float.MaxValue;
+            d2 = float.MaxValue;
+            cellId = 0;
+            for (int j = -1; j <= 1; j++)
+                for (int i = -1; i <= 1; i++)
+                {
+                    int gx = cx + i, gy = cy + j;
+                    int wx = Wrap(gx, cells), wy = Wrap(gy, cells);
+                    float px = gx + Hash(wx, wy, seed);
+                    float py = gy + Hash(wx, wy, seed + 17);
+                    float dx = px - x, dy = py - y;
+                    float d = (float)Math.Sqrt(dx * dx + dy * dy);
+                    if (d < d1)
+                    {
+                        d2 = d1;
+                        d1 = d;
+                        cellId = HashU(wx, wy, 0, seed);
+                    }
+                    else if (d < d2) d2 = d;
+                }
+        }
+
         private static int FloorToInt(float v)
         {
             int i = (int)v;
