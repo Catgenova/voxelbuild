@@ -21,12 +21,33 @@ namespace VoxelBuild.UI
             var canvas = go.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 10;
+            canvas.pixelPerfect = true;
             var scaler = go.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = ScaleFor(Screen.width, Screen.height);
             go.AddComponent<GraphicRaycaster>();
             return canvas;
+        }
+
+        /// <summary>User-adjustable multiplier on top of the automatic resolution scaling.</summary>
+        public static float UserScale = 1f;
+
+        /// <summary>
+        /// UI scale: never below 1 (text stays at native pixel size on small views) and grows on
+        /// high-resolution displays so a 4K screen gets roughly the same physical layout as 1080p.
+        /// </summary>
+        public static float ScaleFor(int width, int height)
+        {
+            float byHeight = height / 1080f;
+            float byWidth = width / 1920f;
+            float auto = Mathf.Max(1f, Mathf.Min(byHeight, byWidth));
+            return auto * UserScale;
+        }
+
+        public static void ApplyScale(Canvas canvas)
+        {
+            var scaler = canvas.GetComponent<CanvasScaler>();
+            if (scaler != null) scaler.scaleFactor = ScaleFor(Screen.width, Screen.height);
         }
 
         public static RectTransform Panel(Transform parent, string name, Color color)
@@ -110,7 +131,7 @@ namespace VoxelBuild.UI
             return rt;
         }
 
-        public static Text Label(Transform parent, string text, int size = 14, TextAnchor align = TextAnchor.MiddleLeft, Color? color = null)
+        public static Text Label(Transform parent, string text, int size = 15, TextAnchor align = TextAnchor.MiddleLeft, Color? color = null)
         {
             var go = new GameObject("Label", typeof(RectTransform));
             go.transform.SetParent(parent, false);
@@ -129,7 +150,7 @@ namespace VoxelBuild.UI
             return t;
         }
 
-        public static Button Button(Transform parent, string text, Action onClick, float width = 0f, float height = 28f, int fontSize = 14)
+        public static Button Button(Transform parent, string text, Action onClick, float width = 0f, float height = 30f, int fontSize = 15)
         {
             var go = new GameObject("Button " + text, typeof(RectTransform));
             go.transform.SetParent(parent, false);

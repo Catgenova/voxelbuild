@@ -33,6 +33,8 @@ namespace VoxelBuild.UI
         private Text contextTitle;
 
         private readonly List<ColonistCard> cards = new List<ColonistCard>();
+        private Canvas canvas;
+        private Vector2Int lastScreenSize;
         private bool contextDirty = true;
         private bool handCrafting;
         private float refreshTimer;
@@ -60,9 +62,10 @@ namespace VoxelBuild.UI
                 es.AddComponent<InputSystemUIInputModule>();
             }
 
-            var canvas = UiFactory.CreateCanvas("HUD");
+            canvas = UiFactory.CreateCanvas("HUD");
             canvas.transform.SetParent(transform, false);
             var root = (RectTransform)canvas.transform;
+            lastScreenSize = new Vector2Int(Screen.width, Screen.height);
 
             BuildTopBar(root);
             BuildToolBar(root);
@@ -142,8 +145,8 @@ namespace VoxelBuild.UI
             }
 
             hintText = UiFactory.Label(panel,
-                "WASD pan  ·  Q/E rotate  ·  Scroll zoom\nPgUp/PgDn or Ctrl+Scroll: view level\nRight-click: back to Select  ·  Space: pause",
-                11, TextAnchor.UpperLeft, UiFactory.DimTextColor);
+                "WASD pan  ·  Q/E rotate  ·  Scroll zoom\nPgUp/PgDn or Ctrl+Scroll: view level\nRight-click: back to Select  ·  Space: pause\nCtrl +/- : UI scale",
+                12, TextAnchor.UpperLeft, UiFactory.DimTextColor);
         }
 
         private void AddToolButton(RectTransform panel, Tool tool, string label)
@@ -219,6 +222,13 @@ namespace VoxelBuild.UI
             ctx.Clock.Speed = speed;
         }
 
+        private void SetUserScale(float scale)
+        {
+            UiFactory.UserScale = Mathf.Clamp(Mathf.Round(scale * 10f) / 10f, 0.7f, 2.5f);
+            UiFactory.ApplyScale(canvas);
+            Log($"UI scale {UiFactory.UserScale:0.0}x");
+        }
+
         public void Log(string message)
         {
             logHistory.Add(message);
@@ -251,6 +261,17 @@ namespace VoxelBuild.UI
 
         private void Update()
         {
+            if (Screen.width != lastScreenSize.x || Screen.height != lastScreenSize.y)
+            {
+                lastScreenSize = new Vector2Int(Screen.width, Screen.height);
+                UiFactory.ApplyScale(canvas);
+            }
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && (kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed))
+            {
+                if (kb.equalsKey.wasPressedThisFrame || kb.numpadPlusKey.wasPressedThisFrame) SetUserScale(UiFactory.UserScale + 0.1f);
+                if (kb.minusKey.wasPressedThisFrame || kb.numpadMinusKey.wasPressedThisFrame) SetUserScale(UiFactory.UserScale - 0.1f);
+            }
             refreshTimer -= Time.unscaledDeltaTime;
             if (refreshTimer <= 0f)
             {
