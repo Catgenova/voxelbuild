@@ -33,3 +33,8 @@ No Unity or .NET compiler is available in the remote sandbox. A tree-sitter base
 used during development; semantic verification happens in the editor via the EditMode tests
 (Window ▸ General ▸ Test Runner). When touching simulation code, add or extend a test in
 `Tests/EditMode` that drives `GameContext.Tick` directly.
+
+## Git
+
+- Push all work directly to `main` (the owner's standing instruction). Feature branches are
+  optional scratch space; `main` must always carry the latest state.
