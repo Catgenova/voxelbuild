@@ -84,6 +84,7 @@ namespace VoxelBuild.Tests
 
             Assert.IsTrue(TestWorld.RunUntil(ctx, () => world.GetBlock(site) == BlockType.Planks, 90f));
             Assert.AreEqual(4, ctx.TotalItems(ItemType.Planks), "one plank was consumed");
+            Assert.AreEqual(0, ctx.Items.TotalOf(ItemType.Planks), "the builder took the whole small pile along");
         }
 
         [Test]
@@ -130,6 +131,32 @@ namespace VoxelBuild.Tests
 
             Assert.IsTrue(TestWorld.RunUntil(ctx, () => c.IsSleeping, 30f));
             Assert.IsTrue(TestWorld.RunUntil(ctx, () => c.Needs.Rest > 0.9f, 120f));
+        }
+
+        [Test]
+        public void BlockIndexTracksBedsAndBushes()
+        {
+            var world = TestWorld.Flat();
+            world.SetBlockRaw(Feet(5, 5), BlockType.Bed);
+            var ctx = TestWorld.Context(world);
+            Assert.AreEqual(1, ctx.Index.Count(BlockType.Bed));
+            Assert.IsTrue(ctx.FindNearestBlock(Feet(1, 1), BlockType.Bed, null, out var bed));
+            Assert.AreEqual(Feet(5, 5), bed);
+
+            world.SetBlock(Feet(5, 5), BlockType.Air);
+            world.SetBlock(Feet(9, 9), BlockType.BerryBush);
+            Assert.AreEqual(0, ctx.Index.Count(BlockType.Bed));
+            Assert.IsTrue(ctx.FindNearestBlock(Feet(1, 1), BlockType.BerryBush, null, out var bush));
+            Assert.AreEqual(Feet(9, 9), bush);
+        }
+
+        [Test]
+        public void ScaleConstantsAreConsistent()
+        {
+            Assert.AreEqual(1f, Scale.BlockSize * Scale.BlocksPerMetre, 1e-5f);
+            Assert.GreaterOrEqual(Scale.ColonistClearance * Scale.BlockSize, 1.6f, "colonists need ~1.7 m of head room");
+            Assert.Less(Scale.StepUp, Scale.ColonistClearance);
+            Assert.Less(Scale.StepUp, Scale.MaxFall);
         }
 
         [Test]

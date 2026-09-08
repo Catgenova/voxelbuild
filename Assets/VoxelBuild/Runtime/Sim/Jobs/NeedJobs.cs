@@ -81,7 +81,7 @@ namespace VoxelBuild.Sim.Jobs
                     c.FaceTowards(target);
                     forageWork += dt * c.Needs.Efficiency;
                     var def = BlockRegistry.Get(BlockType.BerryBush);
-                    if (forageWork < def.MineSeconds) return JobStatus.Running;
+                    if (forageWork < def.MineSeconds * Scale.WorkTimeFactor) return JobStatus.Running;
                     ctx.World.SetBlock(target, BlockType.Air);
                     int got = c.Inventory.Add(def.Drop.Type, def.Drop.Count);
                     if (got < def.Drop.Count) ctx.Items.AddNear(target, def.Drop.Type, def.Drop.Count - got);
@@ -189,10 +189,11 @@ namespace VoxelBuild.Sim.Jobs
             if (!wandering)
             {
                 var rnd = c.Ctx.Random;
-                var offset = new Int3(rnd.Next(-5, 6), 0, rnd.Next(-5, 6));
+                int range = Scale.BlocksPerMetre * 3;
+                var offset = new Int3(rnd.Next(-range, range + 1), 0, rnd.Next(-range, range + 1));
                 var guess = c.Cell + offset;
                 bool found = false;
-                for (int dy = 3; dy >= -3 && !found; dy--)
+                for (int dy = NavRules.StepUp * 2; dy >= -NavRules.MaxFall && !found; dy--)
                 {
                     var p = guess + new Int3(0, dy, 0);
                     if (NavRules.IsStandable(c.Ctx.World, p)) { target = p; found = true; }

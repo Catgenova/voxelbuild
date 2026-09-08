@@ -65,7 +65,7 @@ namespace VoxelBuild.Sim
         public ColorRgb Color = ColorRgb.White;
         public readonly GameContext Ctx;
         public readonly Needs Needs = new Needs();
-        public readonly Inventory Inventory = new Inventory(24);
+        public readonly Inventory Inventory = new Inventory(60);
         public readonly WorkPriorities Work = new WorkPriorities();
         public readonly PathFollower Mover = new PathFollower();
 
@@ -76,7 +76,7 @@ namespace VoxelBuild.Sim
         public Int3? BedCell;
         public float FoodSearchFailedAt = -100f;
 
-        public float WalkSpeedCells = 3.6f;
+        public float WalkSpeedCells = Scale.WalkSpeedCells;
         public float FacingX => Mover.FacingX;
         public float FacingZ => Mover.FacingZ;
 
@@ -199,7 +199,7 @@ namespace VoxelBuild.Sim
             if (world.IsSolid(cell))
             {
                 // Buried: push upward to the first free standable cell.
-                for (int i = 1; i < 12; i++)
+                for (int i = 1; i < NavRules.Clearance * 3; i++)
                 {
                     var up = cell + new Int3(0, i, 0);
                     if (!world.InBounds(up)) break;
@@ -271,7 +271,7 @@ namespace VoxelBuild.Sim
                     // Cannot stand inside the block being worked on.
                     return !(cell.x == target.x && cell.z == target.z && target.y >= cell.y && target.y < cell.y + NavRules.Clearance);
                 default:
-                    return cell.HorizontalDistance(target) <= 1 && Math.Abs(cell.y - target.y) <= 1;
+                    return cell.HorizontalDistance(target) <= NavRules.ReachHorizontal && Math.Abs(cell.y - target.y) <= NavRules.ReachDown;
             }
         }
 
@@ -300,7 +300,7 @@ namespace VoxelBuild.Sim
             if (Needs.IsTired) return new SleepJob();
 
             // Full pack: unload before anything else, otherwise mining and hauling stall.
-            if (Inventory.FreeSpace < 4) return new DepositJob();
+            if (Inventory.FreeSpace < 8) return new DepositJob();
 
             foreach (var w in Work.Ordered())
             {

@@ -13,7 +13,8 @@ crystals and torches underground.
 
 Open the project in Unity 6, load `Assets/OutdoorsScene.unity` and press Play. Everything (terrain,
 materials, colonists, HUD) is generated from code at startup; the scene only holds the `Game`
-object, the camera, the sun and the HDRP volume.
+object, the camera, the sun and the HDRP volume. The default world is 48 m × 24 m × 48 m, which at
+0.25 m blocks is 192 × 96 × 192 cells (864 chunks); expect a couple of seconds of generation.
 
 | Input | Action |
 | --- | --- |
@@ -60,9 +61,9 @@ Tests/EditMode/      NUnit tests for the engine-free layers
 
 ### Key design choices
 
-- **Tiny blocks.** A block is 0.5 m and a colonist is ~3.4 blocks tall. Movement rules need four cells
-  of clearance, can step up one block and drop up to three, which makes hand-dug tunnels and stairs
-  feel natural.
+- **Tiny blocks.** A block is 0.25 m and a colonist is ~7 blocks tall. All block-measured rules live
+  in `Core/Scale.cs`: seven cells of clearance, step up two blocks (0.5 m), drop up to six (1.5 m),
+  work reach of one metre. The generator is tuned in metres, so the look survives scale changes.
 - **View slice.** The mesher takes a maximum visible Y, so cutting the world open is a remesh of the
   affected chunks, not a shader trick. Colliders follow the cut, so clicks always land on what you see.
 - **Orders, not units.** The `JobBoard` holds player intent (mine/build designations, stockpile cells,

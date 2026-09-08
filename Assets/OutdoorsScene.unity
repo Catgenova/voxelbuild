@@ -729,10 +729,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Seed: 1337
-  ChunksX: 6
-  ChunksY: 3
-  ChunksZ: 6
-  BlockSize: 0.5
+  ChunksX: 12
+  ChunksY: 6
+  ChunksZ: 12
   Caves: 1
   ColonistCount: 3
   DayLengthSeconds: 600

@@ -20,13 +20,14 @@ namespace VoxelBuild
     {
         [Header("World")]
         public int Seed = 1337;
-        [Tooltip("World size in 16-block chunks.")]
-        public int ChunksX = 6;
-        public int ChunksY = 3;
-        public int ChunksZ = 6;
-        [Tooltip("Metres per block. Small blocks give the fine-grained look; colonists are ~3.4 blocks tall.")]
-        public float BlockSize = 0.5f;
+        [Tooltip("World size in 16-block chunks. Blocks are 0.25 m (see Core/Scale.cs), so 12 chunks = 48 m.")]
+        public int ChunksX = 12;
+        public int ChunksY = 6;
+        public int ChunksZ = 12;
         public bool Caves = true;
+
+        /// <summary>Metres per block, fixed by <see cref="Scale"/>.</summary>
+        public float BlockSize => Scale.BlockSize;
 
         [Header("Colony")]
         public int ColonistCount = 3;
@@ -166,7 +167,7 @@ namespace VoxelBuild
                 core.Needs.Rest = 0.8f + 0.2f * (float)rnd.NextDouble();
                 core.Inventory.Add(ItemType.Berries, 2);
 
-                var cell = FindStandableNear(spawn, used, 6);
+                var cell = FindStandableNear(spawn, used, Scale.Metres(3f));
                 used.Add(cell);
                 core.Spawn(cell);
                 Ctx.Colonists.Add(core);
@@ -189,7 +190,7 @@ namespace VoxelBuild
 
             void Drop(ItemType type, int count)
             {
-                var cell = FindStandableNear(spawn + new Int3(2, 0, 2), used, 6);
+                var cell = FindStandableNear(spawn + new Int3(Scale.Metres(1f), 0, Scale.Metres(1f)), used, Scale.Metres(3f));
                 used.Add(cell);
                 Ctx.Items.AddNear(cell, type, count);
             }
@@ -202,7 +203,7 @@ namespace VoxelBuild
                     for (int dx = -r; dx <= r; dx++)
                     {
                         if (Mathf.Abs(dx) != r && Mathf.Abs(dz) != r) continue;
-                        for (int dy = 3; dy >= -3; dy--)
+                        for (int dy = NavRules.StepUp * 2; dy >= -NavRules.MaxFall; dy--)
                         {
                             var p = origin + new Int3(dx, dy, dz);
                             if (exclude.Contains(p)) continue;

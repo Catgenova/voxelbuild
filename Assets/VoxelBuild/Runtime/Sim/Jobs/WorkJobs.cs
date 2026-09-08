@@ -62,7 +62,7 @@ namespace VoxelBuild.Sim.Jobs
             c.Activity = "Mining " + def.Name;
             c.FaceTowards(d.Cell);
             d.WorkDone += dt * c.Needs.Efficiency;
-            if (d.WorkDone < def.MineSeconds) return JobStatus.Running;
+            if (d.WorkDone < def.MineSeconds * Scale.WorkTimeFactor) return JobStatus.Running;
 
             c.Ctx.World.SetBlock(d.Cell, BlockType.Air);
             if (!def.Drop.IsEmpty)
@@ -143,7 +143,7 @@ namespace VoxelBuild.Sim.Jobs
                     }
                     if (r == MoveResult.Arrived)
                     {
-                        int want = Math.Min(Math.Max(cost.Count, 8), c.Inventory.FreeSpace + c.Inventory.Count(cost.Type));
+                        int want = Math.Min(Math.Max(cost.Count, 16), c.Inventory.FreeSpace + c.Inventory.Count(cost.Type));
                         int take = Math.Min(ctx.Items.Count(source.Value, cost.Type), want - c.Inventory.Count(cost.Type));
                         if (take > 0)
                         {
@@ -192,7 +192,7 @@ namespace VoxelBuild.Sim.Jobs
                     c.Activity = "Building " + def.Name;
                     c.FaceTowards(d.Cell);
                     d.WorkDone += dt * c.Needs.Efficiency;
-                    if (d.WorkDone < def.BuildSeconds) return JobStatus.Running;
+                    if (d.WorkDone < def.BuildSeconds * Scale.WorkTimeFactor) return JobStatus.Running;
 
                     c.Inventory.Remove(cost.Type, cost.Count);
                     ctx.World.SetBlock(d.Cell, d.BuildType);

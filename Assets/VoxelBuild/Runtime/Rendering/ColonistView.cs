@@ -12,6 +12,10 @@ namespace VoxelBuild.Rendering
 
         public ColonistCore Core { get; private set; }
 
+        /// <summary>Body dimensions in metres, independent of block size.</summary>
+        public const float BodyHeight = 1.7f;
+        public const float BodyWidth = 0.45f;
+
         private WorldRenderer worldRenderer;
         private Transform body;
         private Transform pack;
@@ -28,8 +32,8 @@ namespace VoxelBuild.Rendering
             gameObject.layer = ColonistLayer;
             name = "Colonist " + core.Name;
 
-            float height = blockSize * 3.4f;
-            float width = blockSize * 0.9f;
+            float height = BodyHeight;
+            float width = BodyWidth;
 
             var capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             Destroy(capsule.GetComponent<Collider>());
@@ -79,11 +83,11 @@ namespace VoxelBuild.Rendering
 
             var labelGo = new GameObject("Label");
             labelGo.transform.SetParent(transform, false);
-            labelGo.transform.localPosition = new Vector3(0f, height + blockSize * 0.6f, 0f);
+            labelGo.transform.localPosition = new Vector3(0f, height + 0.25f, 0f);
             label = labelGo.AddComponent<TextMesh>();
             label.font = font;
             label.fontSize = 48;
-            label.characterSize = blockSize * 0.12f;
+            label.characterSize = 0.045f;
             label.anchor = TextAnchor.LowerCenter;
             label.alignment = TextAlignment.Center;
             label.color = Color.white;
@@ -114,10 +118,9 @@ namespace VoxelBuild.Rendering
             var e = body.localEulerAngles;
             float tilt = Mathf.MoveTowardsAngle(e.x, targetTilt, Time.unscaledDeltaTime * 240f);
             body.localEulerAngles = new Vector3(tilt, 0f, 0f);
-            float height = blockSize * 3.4f;
             body.localPosition = Core.IsSleeping
-                ? new Vector3(0f, blockSize * 0.5f, 0f)
-                : new Vector3(0f, height * 0.5f, 0f);
+                ? new Vector3(0f, BodyWidth * 0.5f, 0f)
+                : new Vector3(0f, BodyHeight * 0.5f, 0f);
 
             pack.gameObject.SetActive(!Core.Inventory.IsEmpty);
 
@@ -132,6 +135,6 @@ namespace VoxelBuild.Rendering
             }
         }
 
-        public Bounds Bounds => new Bounds(transform.position + Vector3.up * blockSize * 1.7f, new Vector3(blockSize, blockSize * 3.4f, blockSize));
+        public Bounds Bounds => new Bounds(transform.position + Vector3.up * (BodyHeight * 0.5f), new Vector3(BodyWidth, BodyHeight, BodyWidth));
     }
 }

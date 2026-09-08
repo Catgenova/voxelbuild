@@ -24,18 +24,19 @@ namespace VoxelBuild.Tests
         }
 
         [Test]
-        public void StepsUpSingleBlocksButNotTwo()
+        public void StepsUpToTheLimitButNotBeyond()
         {
             var world = TestWorld.Flat();
-            // A one-block ledge across z at x=5.
-            for (int z = 0; z < world.SizeInBlocks.z; z++) world.SetBlockRaw(new Int3(5, Floor + 1, z), BlockType.Stone);
             var pf = new Pathfinder(world);
             var path = new List<Int3>();
+            // A ledge across z at x=5, StepUp blocks high.
+            for (int k = 1; k <= NavRules.StepUp; k++)
+                for (int z = 0; z < world.SizeInBlocks.z; z++) world.SetBlockRaw(new Int3(5, Floor + k, z), BlockType.Stone);
             Assert.IsTrue(pf.FindPathTo(Feet(2, 2), Feet(8, 2), path));
-            Assert.IsTrue(path.Contains(new Int3(5, Floor + 2, 2)), "path goes over the ledge");
+            Assert.IsTrue(path.Contains(new Int3(5, Floor + 1 + NavRules.StepUp, 2)), "path goes over the ledge");
 
-            // Raise it to two blocks: impassable.
-            for (int z = 0; z < world.SizeInBlocks.z; z++) world.SetBlockRaw(new Int3(5, Floor + 2, z), BlockType.Stone);
+            // One block higher: impassable.
+            for (int z = 0; z < world.SizeInBlocks.z; z++) world.SetBlockRaw(new Int3(5, Floor + 1 + NavRules.StepUp, z), BlockType.Stone);
             Assert.IsFalse(pf.FindPathTo(Feet(2, 2), Feet(8, 2), path));
         }
 
@@ -43,22 +44,28 @@ namespace VoxelBuild.Tests
         public void DropsDownButRefusesLongFalls()
         {
             var world = TestWorld.Flat(2, 2, 8);
-            // Dig a pit 2 deep at x>=6.
-            for (int x = 6; x < world.SizeInBlocks.x; x++)
-                for (int z = 0; z < world.SizeInBlocks.z; z++)
-                    for (int y = Floor - 1; y <= Floor; y++)
-                        world.SetBlockRaw(new Int3(x, y, z), BlockType.Air);
             var pf = new Pathfinder(world);
             var path = new List<Int3>();
-            Assert.IsTrue(pf.FindPathTo(Feet(2, 2), new Int3(10, Floor - 1, 2), path), "can drop two blocks");
-            Assert.IsFalse(pf.FindPathTo(new Int3(10, Floor - 1, 2), Feet(2, 2), path), "cannot climb back out of a 2-deep pit");
 
-            // Deepen to 5: too far to fall.
+            // A pit just too deep to climb out of, but fine to drop into.
+            int depth = NavRules.StepUp + 1;
+            DigPit(world, depth);
+            var pitFeet = new Int3(10, Floor + 1 - depth, 2);
+            Assert.IsTrue(pf.FindPathTo(Feet(2, 2), pitFeet, path), "can drop into the pit");
+            Assert.IsFalse(pf.FindPathTo(pitFeet, Feet(2, 2), path), "cannot climb back out");
+
+            // Deeper than the fall limit: refused.
+            depth = NavRules.MaxFall + 1;
+            DigPit(world, depth);
+            Assert.IsFalse(pf.FindPathTo(Feet(2, 2), new Int3(10, Floor + 1 - depth, 2), path));
+        }
+
+        private static void DigPit(World.VoxelWorld world, int depth)
+        {
             for (int x = 6; x < world.SizeInBlocks.x; x++)
                 for (int z = 0; z < world.SizeInBlocks.z; z++)
-                    for (int y = Floor - 4; y <= Floor; y++)
+                    for (int y = Floor + 1 - depth; y <= Floor; y++)
                         world.SetBlockRaw(new Int3(x, y, z), BlockType.Air);
-            Assert.IsFalse(pf.FindPathTo(Feet(2, 2), new Int3(10, Floor - 4, 2), path));
         }
 
         [Test]
@@ -103,7 +110,7 @@ namespace VoxelBuild.Tests
                 t += 0.1f;
             }
             Assert.AreEqual(Feet(6, 2), follower.Cell);
-            Assert.Less(t, 2f, "4 cells at 4 cells/s takes about a second");
+            Assert.Less(t, 1.5f, "4 cells at 4 cells/s takes about a second");
 
             follower.Teleport(Feet(2, 2));
             follower.SetPath(path);

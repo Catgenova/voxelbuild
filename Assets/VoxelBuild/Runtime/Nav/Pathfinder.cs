@@ -14,7 +14,7 @@ namespace VoxelBuild.Nav
     {
         private readonly IBlockQuery world;
 
-        public int MaxExpansions = 8000;
+        public int MaxExpansions = 40000;
 
         private struct Record
         {
@@ -45,7 +45,7 @@ namespace VoxelBuild.Nav
 
         /// <summary>Path to any standable cell adjacent to (or on) <paramref name="target"/>.</summary>
         public bool FindPathAdjacent(Int3 start, Int3 target, List<Int3> path) =>
-            FindPath(start, c => c.HorizontalDistance(target) <= 1 && Math.Abs(c.y - target.y) <= 1, target, path);
+            FindPath(start, c => c.HorizontalDistance(target) <= NavRules.ReachHorizontal && Math.Abs(c.y - target.y) <= NavRules.ReachDown, target, path);
 
         /// <summary>
         /// General A*. <paramref name="path"/> receives the cells from start (inclusive) to goal (inclusive).
@@ -144,12 +144,19 @@ namespace VoxelBuild.Nav
 
                 if (world.IsSolid(h))
                 {
-                    // Step up: need head room above the current cell and a standable cell one higher.
-                    var up = h + Int3.Up;
-                    var headRoom = cur + new Int3(0, NavRules.Clearance, 0);
-                    bool headClear = !world.InBounds(headRoom) || !world.IsSolid(headRoom);
-                    if (headClear && NavRules.IsStandable(world, up))
-                        Add(outCells, outCosts, up, 1.6f);
+                    // Step up one or more cells: the column above the current cell must stay clear while rising,
+                    // and the landing cell must be standable.
+                    for (int k = 1; k <= NavRules.StepUp; k++)
+                    {
+                        var headRoom = cur + new Int3(0, NavRules.Clearance + k - 1, 0);
+                        if (world.InBounds(headRoom) && world.IsSolid(headRoom)) break;
+                        var up = h + new Int3(0, k, 0);
+                        if (NavRules.IsStandable(world, up))
+                        {
+                            Add(outCells, outCosts, up, 1f + 0.6f * k);
+                            break;
+                        }
+                    }
                     continue;
                 }
 

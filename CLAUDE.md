@@ -11,7 +11,9 @@ See README.md for the design and the module map.
   simulation and are exercised by NUnit tests without a scene. Unity-facing code goes in
   `Rendering/`, `Player/`, `UI/` or `GameBootstrap.cs`.
 - Coordinates: `Int3` block cells; a colonist's cell is where its feet are. World units = cells ×
-  `BlockSize` (0.5 m). Use `WorldRenderer.CellToWorld` / `WorldToCell` for conversions.
+  `Scale.BlockSize` (0.25 m). Use `WorldRenderer.CellToWorld` / `WorldToCell` for conversions.
+  Anything measured in blocks (clearance, reach, step height, generator features) must derive from
+  `Core/Scale.cs`; visual sizes (colonist body, item piles, outline thickness) are in metres.
 - Every block/item/recipe is registered in code (`Core/Blocks.cs`, `Core/Items.cs`,
   `Core/Recipes.cs`). Adding a block: add the enum value, a `BlockDefinition`, and (if craftable)
   an `ItemType` + recipe. The atlas and UI pick it up automatically.

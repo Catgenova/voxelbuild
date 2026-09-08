@@ -35,8 +35,8 @@ namespace VoxelBuild.Tests
         [Test]
         public void GeneratorIsDeterministicAndSane()
         {
-            var a = new VoxelWorld(new Int3(2, 3, 2));
-            var b = new VoxelWorld(new Int3(2, 3, 2));
+            var a = new VoxelWorld(new Int3(2, 5, 2));
+            var b = new VoxelWorld(new Int3(2, 5, 2));
             new WorldGenerator { Seed = 42 }.Generate(a);
             new WorldGenerator { Seed = 42 }.Generate(b);
 

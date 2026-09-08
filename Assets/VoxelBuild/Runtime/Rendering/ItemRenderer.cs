@@ -71,8 +71,8 @@ namespace VoxelBuild.Rendering
                 views[cell] = go;
             }
 
-            float bs = worldRenderer.BlockSize;
-            float size = bs * (0.35f + 0.45f * Mathf.Clamp01(total / (float)GroundItems.MaxPerCell));
+            // Pile size in metres, so piles stay readable whatever the block size.
+            float size = 0.16f + 0.24f * Mathf.Clamp01(total / (float)GroundItems.MaxPerCell);
             go.transform.localScale = new Vector3(size, size * 0.7f, size);
             go.transform.position = worldRenderer.CellFloorCenter(cell) + new Vector3(0f, size * 0.35f, 0f);
             go.GetComponent<MeshRenderer>().sharedMaterial = MaterialFor(dominant);

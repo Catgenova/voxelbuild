@@ -12,7 +12,7 @@ namespace VoxelBuild.Nav
         private readonly List<Int3> path = new List<Int3>();
         private int nextIndex;
 
-        public float SpeedCellsPerSecond = 3.6f;
+        public float SpeedCellsPerSecond = Scale.WalkSpeedCells;
 
         public float PosX, PosY, PosZ;
         /// <summary>The cell the feet are logically in.</summary>

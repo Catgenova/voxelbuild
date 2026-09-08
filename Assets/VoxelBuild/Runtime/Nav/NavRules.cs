@@ -10,15 +10,15 @@ namespace VoxelBuild.Nav
     public static class NavRules
     {
         /// <summary>Vertical cells a colonist needs free (feet cell included).</summary>
-        public const int Clearance = 4;
+        public const int Clearance = Scale.ColonistClearance;
         /// <summary>Maximum cells a colonist can step up in one move.</summary>
-        public const int StepUp = 1;
+        public const int StepUp = Scale.StepUp;
         /// <summary>Maximum cells a colonist will drop without a path being rejected.</summary>
-        public const int MaxFall = 3;
+        public const int MaxFall = Scale.MaxFall;
         /// <summary>Horizontal reach (Chebyshev) for mining/building from a standing cell.</summary>
-        public const int ReachHorizontal = 2;
-        public const int ReachDown = 2;
-        public const int ReachUp = 5;
+        public const int ReachHorizontal = Scale.Reach;
+        public const int ReachDown = Scale.ReachDown;
+        public const int ReachUp = Scale.ReachUp;
 
         public static bool IsPassable(IBlockQuery world, Int3 cell)
         {

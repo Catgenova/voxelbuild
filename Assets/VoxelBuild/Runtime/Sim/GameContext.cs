@@ -16,6 +16,7 @@ namespace VoxelBuild.Sim
         public readonly JobBoard Jobs;
         public readonly GameClock Clock;
         public readonly Pathfinder Pathfinder;
+        public readonly BlockIndex Index;
         public readonly List<ColonistCore> Colonists = new List<ColonistCore>();
         public readonly Random Random;
 
@@ -30,6 +31,7 @@ namespace VoxelBuild.Sim
             Jobs = new JobBoard(world);
             Clock = new GameClock();
             Pathfinder = new Pathfinder(world);
+            Index = new BlockIndex(world);
             Random = new Random(seed);
         }
 
@@ -56,31 +58,24 @@ namespace VoxelBuild.Sim
             return false;
         }
 
-        /// <summary>Nearest block of a type, by straight-line distance, within the whole world. Slow but rare.</summary>
+        /// <summary>Nearest block of an indexed type (bed, workbench, bush, torch) by straight-line distance.</summary>
         public bool FindNearestBlock(Int3 from, BlockType type, Func<Int3, bool> filter, out Int3 result)
         {
+            if (!BlockIndex.IsTracked(type))
+                throw new ArgumentException($"{type} is not an indexed block type", nameof(type));
             result = Int3.Zero;
             float best = float.MaxValue;
             bool found = false;
-            foreach (var chunk in World.Chunks())
+            foreach (var p in Index.Positions(type))
             {
-                if (chunk.IsEmpty) continue;
-                var origin = chunk.Origin;
-                for (int y = 0; y < Chunk.Size; y++)
-                    for (int z = 0; z < Chunk.Size; z++)
-                        for (int x = 0; x < Chunk.Size; x++)
-                        {
-                            if (chunk.Get(x, y, z) != type) continue;
-                            var p = origin + new Int3(x, y, z);
-                            if (filter != null && !filter(p)) continue;
-                            float d = p.EuclideanDistance(from);
-                            if (d < best)
-                            {
-                                best = d;
-                                result = p;
-                                found = true;
-                            }
-                        }
+                if (filter != null && !filter(p)) continue;
+                float d = p.EuclideanDistance(from);
+                if (d < best)
+                {
+                    best = d;
+                    result = p;
+                    found = true;
+                }
             }
             return found;
         }

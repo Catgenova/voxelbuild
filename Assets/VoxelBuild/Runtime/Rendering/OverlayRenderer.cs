@@ -70,7 +70,7 @@ namespace VoxelBuild.Rendering
         private void RebuildOrders()
         {
             float bs = worldRenderer.BlockSize;
-            float t = bs * 0.04f;
+            float t = Mathf.Min(0.015f, bs * 0.08f);
             int slice = worldRenderer.SliceY;
             mineMesh.Clear();
             buildMesh.Clear();
@@ -105,7 +105,7 @@ namespace VoxelBuild.Rendering
                 var box = Cursor.Value;
                 var min = worldRenderer.CellToWorld(box.Min) - Vector3.one * (bs * 0.02f);
                 var max = worldRenderer.CellToWorld(box.Max + Int3.One) + Vector3.one * (bs * 0.02f);
-                cursorMesh.AddBoxOutline(min, max, bs * 0.05f);
+                cursorMesh.AddBoxOutline(min, max, Mathf.Min(0.02f, bs * 0.1f));
                 renderers[cursorMesh].sharedMaterial.SetColor("_EmissiveColor", CursorTint);
             }
             cursorMesh.Apply();
@@ -114,7 +114,7 @@ namespace VoxelBuild.Rendering
             if (Selection.HasValue)
             {
                 var b = Selection.Value;
-                selectionMesh.AddBoxOutline(b.min, b.max, bs * 0.05f);
+                selectionMesh.AddBoxOutline(b.min, b.max, Mathf.Min(0.02f, bs * 0.1f));
             }
             selectionMesh.Apply();
         }

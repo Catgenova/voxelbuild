@@ -182,7 +182,7 @@ namespace VoxelBuild.Player
             float scroll = mouse.scroll.ReadValue().y;
             if (ctrl && Mathf.Abs(scroll) > 0.01f) sliceDelta += scroll > 0f ? 1 : -1;
             if (kb.homeKey.wasPressedThisFrame) worldRenderer.SliceY = worldRenderer.MaxSliceY;
-            if (sliceDelta != 0) worldRenderer.SliceY += sliceDelta * (kb.leftShiftKey.isPressed ? 4 : 1);
+            if (sliceDelta != 0) worldRenderer.SliceY += sliceDelta * (kb.leftShiftKey.isPressed ? Scale.BlocksPerMetre : 1);
         }
 
         private static Color TintFor(Tool t)
