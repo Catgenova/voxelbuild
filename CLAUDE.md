@@ -17,6 +17,8 @@ See README.md for the design and the module map.
 - Every block/item/recipe is registered in code (`Core/Blocks.cs`, `Core/Items.cs`,
   `Core/Recipes.cs`). Adding a block: add the enum value, a `BlockDefinition`, and (if craftable)
   an `ItemType` + recipe. The atlas and UI pick it up automatically.
+- Crafting rule: raw blocks are placeable from their drop item; every recipe has a workshop
+  `Station` (no by-hand crafting). A block with recipes is a workshop and gets a bills panel.
 - Block looks are procedural: `BlockRegistry.ApplyStyle` assigns a `SurfaceStyle` per face and
   `World/TilePainter.cs` paints it (albedo, height, metallic, smoothness, emissive). Add a style
   there rather than importing textures; keep painters tileable (use the periodic noise helpers).

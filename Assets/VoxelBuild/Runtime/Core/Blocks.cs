@@ -27,6 +27,7 @@ namespace VoxelBuild.Core
         Bed,
         Torch,
         Water,
+        CarpentryBench,
         Count,
     }
 
@@ -64,6 +65,7 @@ namespace VoxelBuild.Core
         Fabric,
         TorchSide,
         TorchTop,
+        CarpentryTop,
     }
 
     public sealed class BlockDefinition
@@ -211,6 +213,7 @@ namespace VoxelBuild.Core
             {
                 Type = BlockType.CoalOre, Name = "Coal Ore", Category = BlockCategory.Ore, MineSeconds = 3.0f,
                 Drop = new ItemStack(ItemType.Coal, 1),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.Coal, 1),
                 TopColor = ColorRgb.Bytes(95, 95, 95), SideColor = ColorRgb.Bytes(95, 95, 95), BottomColor = ColorRgb.Bytes(95, 95, 95),
                 TextureNoise = 0.35f,
             });
@@ -218,6 +221,7 @@ namespace VoxelBuild.Core
             {
                 Type = BlockType.IronOre, Name = "Iron Ore", Category = BlockCategory.Ore, MineSeconds = 4.0f,
                 Drop = new ItemStack(ItemType.IronOre, 1),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.IronOre, 1),
                 TopColor = ColorRgb.Bytes(170, 140, 120), SideColor = ColorRgb.Bytes(170, 140, 120), BottomColor = ColorRgb.Bytes(170, 140, 120),
                 TextureNoise = 0.30f,
             });
@@ -225,6 +229,7 @@ namespace VoxelBuild.Core
             {
                 Type = BlockType.GoldOre, Name = "Gold Ore", Category = BlockCategory.Ore, MineSeconds = 5.0f,
                 Drop = new ItemStack(ItemType.GoldOre, 1),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.GoldOre, 1),
                 TopColor = ColorRgb.Bytes(200, 170, 80), SideColor = ColorRgb.Bytes(200, 170, 80), BottomColor = ColorRgb.Bytes(200, 170, 80),
                 TextureNoise = 0.30f,
             });
@@ -233,6 +238,7 @@ namespace VoxelBuild.Core
                 Type = BlockType.Crystal, Name = "Crystal", Category = BlockCategory.Ore, MineSeconds = 6.0f,
                 IsOpaque = false, IsTranslucent = true,
                 Drop = new ItemStack(ItemType.Crystal, 1),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.Crystal, 1),
                 TopColor = ColorRgb.Bytes(120, 220, 255), SideColor = ColorRgb.Bytes(120, 220, 255), BottomColor = ColorRgb.Bytes(120, 220, 255),
                 TextureNoise = 0.20f,
                 Emissive = new ColorRgb(0.25f, 0.6f, 0.9f),
@@ -278,16 +284,16 @@ namespace VoxelBuild.Core
             Add(new BlockDefinition
             {
                 Type = BlockType.Workbench, Name = "Workbench", Category = BlockCategory.Furniture, MineSeconds = 1.5f,
-                Drop = new ItemStack(ItemType.Workbench, 1),
-                IsBuildable = true, BuildCost = new ItemStack(ItemType.Workbench, 1), BuildSeconds = 2.0f,
+                Drop = new ItemStack(ItemType.Planks, 4),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.Planks, 4), BuildSeconds = 3.0f,
                 TopColor = ColorRgb.Bytes(150, 110, 70), SideColor = ColorRgb.Bytes(120, 85, 50), BottomColor = ColorRgb.Bytes(110, 80, 45),
                 TextureNoise = 0.10f,
             });
             Add(new BlockDefinition
             {
                 Type = BlockType.Bed, Name = "Bed", Category = BlockCategory.Furniture, MineSeconds = 1.0f,
-                Drop = new ItemStack(ItemType.Bed, 1),
-                IsBuildable = true, BuildCost = new ItemStack(ItemType.Bed, 1), BuildSeconds = 2.0f,
+                Drop = new ItemStack(ItemType.Planks, 6),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.Planks, 6), BuildSeconds = 3.0f,
                 TopColor = ColorRgb.Bytes(200, 60, 60), SideColor = ColorRgb.Bytes(160, 120, 80), BottomColor = ColorRgb.Bytes(140, 100, 60),
                 TextureNoise = 0.05f,
             });
@@ -300,6 +306,14 @@ namespace VoxelBuild.Core
                 TopColor = ColorRgb.Bytes(255, 200, 90), SideColor = ColorRgb.Bytes(200, 140, 70), BottomColor = ColorRgb.Bytes(120, 90, 50),
                 TextureNoise = 0.10f,
                 Emissive = new ColorRgb(1.2f, 0.7f, 0.25f),
+            });
+            Add(new BlockDefinition
+            {
+                Type = BlockType.CarpentryBench, Name = "Carpentry Bench", Category = BlockCategory.Furniture, MineSeconds = 1.5f,
+                Drop = new ItemStack(ItemType.Log, 4),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.Log, 4), BuildSeconds = 3.0f,
+                TopColor = ColorRgb.Bytes(175, 135, 85), SideColor = ColorRgb.Bytes(110, 78, 45), BottomColor = ColorRgb.Bytes(100, 72, 42),
+                TextureNoise = 0.1f,
             });
             Add(new BlockDefinition
             {
@@ -373,6 +387,9 @@ namespace VoxelBuild.Core
                 case BlockType.Torch:
                     Set(d, SurfaceStyle.TorchTop, SurfaceStyle.TorchSide, SurfaceStyle.Bark, 0.3f, false, false);
                     d.Accent = ColorRgb.Bytes(255, 170, 60); break;
+                case BlockType.CarpentryBench:
+                    Set(d, SurfaceStyle.CarpentryTop, SurfaceStyle.Bark, SurfaceStyle.LogEnd, 0.3f, false, false);
+                    d.Accent = ColorRgb.Bytes(190, 190, 200); d.AccentMetallic = 0.95f; d.AccentSmoothness = 0.75f; break;
                 default:
                     break;
             }

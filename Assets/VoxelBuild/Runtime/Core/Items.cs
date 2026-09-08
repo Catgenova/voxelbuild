@@ -20,8 +20,6 @@ namespace VoxelBuild.Core
         Planks,
         StoneBrick,
         Berries,
-        Workbench,
-        Bed,
         Torch,
         Bucket,
         WaterBucket,
@@ -83,10 +81,8 @@ namespace VoxelBuild.Core
             Add(ItemType.Planks, "Planks", ItemCategory.Material, ColorRgb.Bytes(190, 150, 95));
             Add(ItemType.StoneBrick, "Stone Brick", ItemCategory.Material, ColorRgb.Bytes(110, 110, 115));
             Add(ItemType.Berries, "Berries", ItemCategory.Food, ColorRgb.Bytes(170, 40, 90), nutrition: 0.35f);
-            Add(ItemType.Workbench, "Workbench", ItemCategory.Furniture, ColorRgb.Bytes(150, 110, 70), stack: 5);
-            Add(ItemType.Bed, "Bed", ItemCategory.Furniture, ColorRgb.Bytes(200, 60, 60), stack: 5);
             Add(ItemType.Torch, "Torch", ItemCategory.Furniture, ColorRgb.Bytes(255, 190, 80), stack: 20);
-            Add(ItemType.Bucket, "Bucket", ItemCategory.Tool, ColorRgb.Bytes(150, 150, 160), stack: 4);
+            Add(ItemType.Bucket, "Bucket", ItemCategory.Tool, ColorRgb.Bytes(160, 130, 90), stack: 4);
             Add(ItemType.WaterBucket, "Water Bucket", ItemCategory.Tool, ColorRgb.Bytes(60, 120, 200), stack: 4);
         }
 

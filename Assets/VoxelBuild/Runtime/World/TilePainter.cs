@@ -113,6 +113,7 @@ namespace VoxelBuild.World
                 case SurfaceStyle.Planks: return 1.3f;
                 case SurfaceStyle.Brick: return 2.4f;
                 case SurfaceStyle.WorkbenchTop: return 1.5f;
+                case SurfaceStyle.CarpentryTop: return 1.6f;
                 case SurfaceStyle.BedTop: return 1.2f;
                 default: return 1f;
             }
@@ -142,6 +143,7 @@ namespace VoxelBuild.World
                 case SurfaceStyle.Planks: return Planks(u, v, seed, baseColor, def.Accent, def.Smoothness);
                 case SurfaceStyle.Brick: return Brick(u, v, seed, baseColor, def.Accent, def.Smoothness);
                 case SurfaceStyle.WorkbenchTop: return WorkbenchTop(u, v, seed, baseColor, def);
+                case SurfaceStyle.CarpentryTop: return CarpentryTop(u, v, seed, baseColor, def);
                 case SurfaceStyle.BedTop: return BedTop(u, v, seed, baseColor, def.Accent);
                 case SurfaceStyle.Fabric: return Fabric(u, v, seed, baseColor, 0.15f);
                 case SurfaceStyle.TorchSide: return TorchSide(u, v, seed, baseColor, def);
@@ -488,6 +490,52 @@ namespace VoxelBuild.World
                     s.Height = 0.4f;
                     s.Smoothness = 0.3f;
                 }
+            }
+            return s;
+        }
+
+        /// <summary>Plank top with a circular saw blade set into a slot and a clamp rail along one edge.</summary>
+        private static Sample CarpentryTop(float u, float v, int seed, ColorRgb c, BlockDefinition def)
+        {
+            var s = Planks(u, v, seed, c, def.Accent * 0.25f, def.Smoothness);
+            // Sawdust dusting.
+            float dust = Fbm(u, v, 20, seed + 5, 2);
+            if (dust > 0.62f) s.Albedo = ColorRgb.Lerp(s.Albedo, ColorRgb.Bytes(225, 200, 150), (dust - 0.62f) * 2f);
+
+            // Saw blade: a metal disc with teeth, centred on the right half.
+            float dx = u - 0.66f, dy = v - 0.5f;
+            float r = (float)Math.Sqrt(dx * dx + dy * dy);
+            float angle = (float)Math.Atan2(dy, dx);
+            float teeth = 0.22f + 0.025f * (float)Math.Sin(angle * 24f);
+            if (r < teeth)
+            {
+                float radial = Aniso(r * 3f, angle / 6.2832f + 0.5f, 3, 64, seed + 11, 2);
+                s.Albedo = def.Accent * (0.75f + 0.35f * radial);
+                s.Metallic = def.AccentMetallic;
+                s.Smoothness = def.AccentSmoothness * (0.85f + 0.3f * radial);
+                s.Height = 0.62f;
+                if (r < 0.05f)
+                {
+                    s.Albedo = s.Albedo * 0.35f;
+                    s.Height = 0.4f;
+                }
+            }
+            else if (r < teeth + 0.02f)
+            {
+                s.Albedo = s.Albedo * 0.35f; // slot shadow
+                s.Height = 0.2f;
+            }
+
+            // Clamp rail along the left edge.
+            if (u < 0.18f && v > 0.12f && v < 0.88f)
+            {
+                float rail = Aniso(u, v, 4, 24, seed + 13, 2);
+                s.Albedo = def.Accent * 0.7f * (0.8f + 0.3f * rail);
+                s.Metallic = def.AccentMetallic * 0.8f;
+                s.Smoothness = 0.5f;
+                s.Height = 0.85f;
+                float slot = (float)Math.Abs(Math.Sin(v * Math.PI * 2.0 * 6.0));
+                if (slot < 0.15f) s.Height = 0.6f;
             }
             return s;
         }

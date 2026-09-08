@@ -64,7 +64,26 @@ namespace VoxelBuild.Tests
                 Assert.Greater(r.WorkSeconds, 0f, r.Id);
             }
             Assert.IsNotNull(RecipeRegistry.Find("planks"));
-            Assert.IsTrue(RecipeRegistry.Find("planks").ByHand);
+            Assert.AreEqual(BlockType.CarpentryBench, RecipeRegistry.Find("planks").Station, "wood is processed at the carpentry bench");
+            foreach (var r in RecipeRegistry.All) Assert.IsFalse(r.ByHand, $"{r.Id}: all processing happens at a workshop");
+            Assert.IsTrue(RecipeRegistry.IsWorkshop(BlockType.CarpentryBench));
+            Assert.IsTrue(RecipeRegistry.IsWorkshop(BlockType.Workbench));
+            Assert.IsFalse(RecipeRegistry.IsWorkshop(BlockType.Stone));
+        }
+
+        [Test]
+        public void RawBlocksCanBePlacedBackFromTheirDrops()
+        {
+            foreach (var type in new[] { BlockType.Dirt, BlockType.Stone, BlockType.Sand, BlockType.Gravel, BlockType.Clay, BlockType.Log,
+                                         BlockType.CoalOre, BlockType.IronOre, BlockType.GoldOre, BlockType.Crystal })
+            {
+                var def = BlockRegistry.Get(type);
+                Assert.IsTrue(def.IsBuildable, $"{def.Name} is placeable");
+                Assert.AreEqual(def.Drop.Type, def.BuildCost.Type, $"{def.Name} is rebuilt from what it drops");
+            }
+            var bench = BlockRegistry.Get(BlockType.CarpentryBench);
+            Assert.AreEqual(ItemType.Log, bench.BuildCost.Type, "the first workshop needs only raw logs");
+            Assert.AreEqual(ItemType.Planks, BlockRegistry.Get(BlockType.Workbench).BuildCost.Type, "the workbench needs processed planks");
         }
     }
 }

@@ -30,9 +30,15 @@ object, the camera, the sun and the HDRP volume. The default world is 48 m × 24
 | `Space` | Pause / resume |
 
 Typical first minutes: drag the **Mine** tool over a hillside to gather stone and dirt, order a
-**Stockpile** zone so hauled goods land in one place, craft **planks by hand** from the starting logs,
-then build a **Workbench** and queue beds and torches on it. Colonists eat berries from piles or forage
-wild bushes when hungry, and sleep in beds (or on the ground) when tired.
+**Stockpile** zone so hauled goods land in one place, build a **Carpentry Bench** from the starting
+logs and queue **planks** on it, then build a **Workbench** from planks for stone work, and beds and
+torches for the night. Colonists eat berries from piles or forage wild bushes when hungry, and sleep
+in beds (or on the ground) when tired.
+
+Raw harvested blocks (dirt, stone, sand, gravel, clay, logs, ores, crystal) can be placed straight
+back down from the items they drop. Anything else is processed at a workshop: the Carpentry Bench
+turns logs into planks, buckets and torches; the Workbench cuts stone into bricks. Furniture is built
+directly from processed materials (a Workbench costs 4 planks, a bed 6).
 
 ## Architecture
 

@@ -9,7 +9,7 @@ namespace VoxelBuild.Sim
     /// <summary>Keeps the positions of rare, interesting blocks (beds, workbenches, bushes) so searches never scan the world.</summary>
     public sealed class BlockIndex
     {
-        private static readonly BlockType[] Tracked = { BlockType.Bed, BlockType.Workbench, BlockType.BerryBush, BlockType.Torch };
+        private static readonly BlockType[] Tracked = { BlockType.Bed, BlockType.Workbench, BlockType.CarpentryBench, BlockType.BerryBush, BlockType.Torch };
 
         private readonly Dictionary<BlockType, HashSet<Int3>> positions = new Dictionary<BlockType, HashSet<Int3>>();
 

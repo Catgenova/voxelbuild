@@ -198,9 +198,8 @@ namespace VoxelBuild
             var used = new HashSet<Int3>();
             foreach (var c in Ctx.Colonists) used.Add(c.Cell);
             Drop(ItemType.Berries, 10);
-            Drop(ItemType.Log, 8);
+            Drop(ItemType.Log, 10);
             Drop(ItemType.Stone, 6);
-            Drop(ItemType.Planks, 4);
             Drop(ItemType.Bucket, 1);
 
             void Drop(ItemType type, int count)

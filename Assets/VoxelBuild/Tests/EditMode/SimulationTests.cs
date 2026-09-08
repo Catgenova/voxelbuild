@@ -88,22 +88,43 @@ namespace VoxelBuild.Tests
         }
 
         [Test]
-        public void ColonistCraftsByHandAndHaulsToStockpile()
+        public void ColonistSawsPlanksAtTheCarpentryBenchAndHaulsToStockpile()
         {
             var world = TestWorld.Flat();
+            var bench = Feet(10, 10);
+            world.SetBlockRaw(bench, BlockType.CarpentryBench);
             var ctx = TestWorld.Context(world);
             var c = TestWorld.Colonist(ctx, Feet(3, 3));
             c.Work.Set(WorkType.Craft, 1);
             c.Work.Set(WorkType.Haul, 2);
             ctx.Items.Add(Feet(5, 3), ItemType.Log, 1);
             ctx.Stockpiles.Add(Feet(20, 20));
-            ctx.Jobs.AddBill(RecipeRegistry.Find("planks"), null, 1);
+            ctx.Jobs.AddBill(RecipeRegistry.Find("planks"), bench, 1);
 
             Assert.IsTrue(TestWorld.RunUntil(ctx, () => ctx.TotalItems(ItemType.Planks) == 4, 90f));
             Assert.AreEqual(0, ctx.TotalItems(ItemType.Log));
             Assert.AreEqual(0, ctx.Jobs.Bills.Count);
             Assert.IsTrue(TestWorld.RunUntil(ctx, () => ctx.Items.Count(Feet(20, 20), ItemType.Planks) == 4, 90f),
                 "planks end up in the stockpile");
+        }
+
+        [Test]
+        public void BillsNeedTheirWorkshopToExist()
+        {
+            var world = TestWorld.Flat();
+            var ctx = TestWorld.Context(world);
+            var c = TestWorld.Colonist(ctx, Feet(3, 3));
+            c.Work.Set(WorkType.Craft, 1);
+            ctx.Items.Add(Feet(5, 3), ItemType.Log, 2);
+            var bench = Feet(10, 10);
+            ctx.Jobs.AddBill(RecipeRegistry.Find("planks"), bench, 1);
+            Assert.IsFalse(TestWorld.RunUntil(ctx, () => ctx.TotalItems(ItemType.Planks) > 0, 15f), "no bench, no planks");
+
+            ctx.Jobs.AddBuild(bench, BlockType.CarpentryBench);
+            ctx.Items.Add(Feet(6, 3), ItemType.Log, 4);
+            c.Work.Set(WorkType.Build, 1);
+            Assert.IsTrue(TestWorld.RunUntil(ctx, () => world.GetBlock(bench) == BlockType.CarpentryBench, 90f), "bench built from raw logs");
+            Assert.IsTrue(TestWorld.RunUntil(ctx, () => ctx.TotalItems(ItemType.Planks) >= 4, 90f), "then the bill gets worked");
         }
 
         [Test]

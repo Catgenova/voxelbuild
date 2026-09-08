@@ -36,7 +36,6 @@ namespace VoxelBuild.UI
         private Canvas canvas;
         private Vector2Int lastScreenSize;
         private bool contextDirty = true;
-        private bool handCrafting;
         private float refreshTimer;
 
         private sealed class ColonistCard
@@ -76,7 +75,7 @@ namespace VoxelBuild.UI
 
             ctx.Log = Log;
             ctx.Jobs.Changed += () => contextDirty = true;
-            tools.SelectionChanged += () => { handCrafting = false; contextDirty = true; };
+            tools.SelectionChanged += () => contextDirty = true;
             tools.ToolChanged += RefreshToolButtons;
             ctx.Clock.SpeedChanged += _ => RefreshSpeedButtons();
             worldRenderer.SliceChanged += _ => RefreshSlice();
@@ -85,7 +84,7 @@ namespace VoxelBuild.UI
             RefreshToolButtons();
             RefreshSpeedButtons();
             RefreshSlice();
-            Log("Welcome. Drag with the Mine tool to dig, build a Workbench from planks, and keep your colonists fed.");
+            Log("Welcome. Mine logs, build a Carpentry Bench from 4 logs, then queue planks on it. Keep your colonists fed.");
         }
 
         // ------------------------------------------------------------------ Layout
@@ -134,7 +133,6 @@ namespace VoxelBuild.UI
             AddToolButton(panel, Tool.Cancel, "Cancel  [5]");
             AddToolButton(panel, Tool.Drain, "Drain water  [6]");
             AddToolButton(panel, Tool.Pour, "Pour water  [7]");
-            UiFactory.Button(panel, "Craft by hand", () => { handCrafting = true; tools.ClearSelection(); contextDirty = true; });
 
             UiFactory.Label(panel, "Build with", 15, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
             blockList = UiFactory.Group(panel, "Blocks");
@@ -333,12 +331,6 @@ namespace VoxelBuild.UI
             {
                 BuildColonistContext(tools.SelectedColonist);
             }
-            else if (handCrafting)
-            {
-                contextTitle.text = "Craft by hand";
-                UiFactory.Label(contextBody, "Colonists with Craft enabled will work these anywhere.", 12, TextAnchor.UpperLeft, UiFactory.DimTextColor);
-                BuildBillList(null, BlockType.Air);
-            }
             else if (tools.SelectedCell.HasValue)
             {
                 BuildCellContext(tools.SelectedCell.Value);
@@ -440,10 +432,10 @@ namespace VoxelBuild.UI
                 UiFactory.Button(contextBody, "Mine this block", () => ctx.Jobs.AddMine(cell), 0f, 26f);
             }
 
-            if (block == BlockType.Workbench)
+            if (RecipeRegistry.IsWorkshop(block))
             {
                 UiFactory.Label(contextBody, "Bills", 14, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
-                BuildBillList(cell, BlockType.Workbench);
+                BuildBillList(cell, block);
             }
         }
 
