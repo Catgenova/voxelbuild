@@ -134,6 +134,41 @@ namespace VoxelBuild.Tests
         }
 
         [Test]
+        public void ColonistDrainsAndPoursWithABucket()
+        {
+            var world = TestWorld.Flat();
+            var ctx = TestWorld.Context(world);
+            var c = TestWorld.Colonist(ctx, Feet(3, 3));
+            c.Work.Set(WorkType.Water, 1);
+            ctx.Items.Add(Feet(4, 3), ItemType.Bucket, 1);
+            var puddle = Feet(8, 8);
+            ctx.Fluids.Pour(puddle, FluidSim.Max);
+            var target = Feet(14, 14);
+
+            Assert.IsTrue(ctx.Jobs.AddDrain(puddle));
+            Assert.IsTrue(ctx.Jobs.AddPour(target));
+            Assert.IsTrue(TestWorld.RunUntil(ctx, () => ctx.Fluids.Level(puddle) == 0, 60f), $"puddle drained; {c.Activity}");
+            Assert.IsTrue(TestWorld.RunUntil(ctx, () => ctx.Fluids.Level(target) > 0, 60f), $"water poured at the target; {c.Activity}");
+            Assert.AreEqual(1, ctx.TotalItems(ItemType.Bucket), "the bucket is empty again");
+            Assert.AreEqual(0, ctx.Jobs.DesignationCount);
+        }
+
+        [Test]
+        public void ColonistFillsBucketAtASpringForAPourOrder()
+        {
+            var world = TestWorld.Flat();
+            var ctx = TestWorld.Context(world);
+            var c = TestWorld.Colonist(ctx, Feet(3, 3));
+            c.Work.Set(WorkType.Water, 1);
+            c.Inventory.Add(ItemType.Bucket, 1);
+            ctx.Fluids.SetSource(Feet(6, 6), true);
+            var target = Feet(20, 3);
+            Assert.IsTrue(ctx.Jobs.AddPour(target));
+            Assert.IsTrue(TestWorld.RunUntil(ctx, () => ctx.Fluids.Level(target) > 0, 90f), $"water arrives; {c.Activity}");
+            Assert.IsTrue(ctx.Fluids.IsSource(Feet(6, 6)), "the spring is untouched");
+        }
+
+        [Test]
         public void BlockIndexTracksBedsAndBushes()
         {
             var world = TestWorld.Flat();
@@ -167,6 +202,7 @@ namespace VoxelBuild.Tests
             w.Set(WorkType.Mine, 0);
             var ordered = new System.Collections.Generic.List<WorkType>(w.Ordered());
             Assert.AreEqual(WorkType.Haul, ordered[0]);
+            CollectionAssert.Contains(ordered, WorkType.Water);
             CollectionAssert.DoesNotContain(ordered, WorkType.Mine);
             w.Cycle(WorkType.Mine);
             Assert.AreEqual(1, w.Get(WorkType.Mine));

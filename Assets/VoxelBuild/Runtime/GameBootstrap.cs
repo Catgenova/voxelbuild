@@ -201,6 +201,7 @@ namespace VoxelBuild
             Drop(ItemType.Log, 8);
             Drop(ItemType.Stone, 6);
             Drop(ItemType.Planks, 4);
+            Drop(ItemType.Bucket, 1);
 
             void Drop(ItemType type, int count)
             {

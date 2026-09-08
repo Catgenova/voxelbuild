@@ -10,6 +10,10 @@ namespace VoxelBuild.Sim
     {
         Mine,
         Build,
+        /// <summary>Scoop this water cell away with a bucket.</summary>
+        Drain,
+        /// <summary>Empty a bucket of water into this cell.</summary>
+        Pour,
     }
 
     /// <summary>A player order attached to one block cell.</summary>
@@ -91,6 +95,38 @@ namespace VoxelBuild.Sim
             designations[cell] = new Designation { Kind = DesignationKind.Build, Cell = cell, BuildType = type };
             Changed?.Invoke();
             return true;
+        }
+
+        public bool AddDrain(Int3 cell)
+        {
+            if (!world.InBounds(cell) || world.GetBlock(cell) != BlockType.Water) return false;
+            if (designations.TryGetValue(cell, out var existing) && existing.Kind == DesignationKind.Drain) return false;
+            designations[cell] = new Designation { Kind = DesignationKind.Drain, Cell = cell };
+            Changed?.Invoke();
+            return true;
+        }
+
+        public bool AddPour(Int3 cell)
+        {
+            if (!world.InBounds(cell) || world.GetBlock(cell) != BlockType.Air) return false;
+            if (designations.TryGetValue(cell, out var existing) && existing.Kind == DesignationKind.Pour) return false;
+            designations[cell] = new Designation { Kind = DesignationKind.Pour, Cell = cell };
+            Changed?.Invoke();
+            return true;
+        }
+
+        public int AddDrainBox(IntBox box)
+        {
+            int n = 0;
+            foreach (var c in box.Cells()) if (AddDrain(c)) n++;
+            return n;
+        }
+
+        public int AddPourBox(IntBox box)
+        {
+            int n = 0;
+            foreach (var c in box.Cells()) if (AddPour(c)) n++;
+            return n;
         }
 
         public int AddMineBox(IntBox box)
@@ -223,7 +259,9 @@ namespace VoxelBuild.Sim
             if (designations.TryGetValue(pos, out var d))
             {
                 bool invalid = (d.Kind == DesignationKind.Mine && newType == BlockType.Air)
-                               || (d.Kind == DesignationKind.Build && newType != BlockType.Air && newType != BlockType.Water);
+                               || (d.Kind == DesignationKind.Build && newType != BlockType.Air && newType != BlockType.Water)
+                               || (d.Kind == DesignationKind.Drain && newType != BlockType.Water)
+                               || (d.Kind == DesignationKind.Pour && BlockRegistry.IsSolid(newType));
                 if (invalid)
                 {
                     designations.Remove(pos);

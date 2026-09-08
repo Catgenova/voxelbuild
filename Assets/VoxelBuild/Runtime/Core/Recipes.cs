@@ -49,6 +49,12 @@ namespace VoxelBuild.Core
             });
             Recipes.Add(new Recipe
             {
+                Id = "bucket", Name = "Forge Bucket",
+                Inputs = new[] { new ItemStack(ItemType.IronOre, 2), new ItemStack(ItemType.Planks, 1) },
+                Output = new ItemStack(ItemType.Bucket, 1), WorkSeconds = 8f, Station = BlockType.Workbench,
+            });
+            Recipes.Add(new Recipe
+            {
                 Id = "torch", Name = "Craft Torches",
                 Inputs = new[] { new ItemStack(ItemType.Planks, 1), new ItemStack(ItemType.Coal, 1) },
                 Output = new ItemStack(ItemType.Torch, 4), WorkSeconds = 3f, Station = BlockType.Workbench,

@@ -23,6 +23,8 @@ namespace VoxelBuild.Core
         Workbench,
         Bed,
         Torch,
+        Bucket,
+        WaterBucket,
         Count,
     }
 
@@ -32,6 +34,7 @@ namespace VoxelBuild.Core
         Material,
         Food,
         Furniture,
+        Tool,
     }
 
     public sealed class ItemDefinition
@@ -83,6 +86,8 @@ namespace VoxelBuild.Core
             Add(ItemType.Workbench, "Workbench", ItemCategory.Furniture, ColorRgb.Bytes(150, 110, 70), stack: 5);
             Add(ItemType.Bed, "Bed", ItemCategory.Furniture, ColorRgb.Bytes(200, 60, 60), stack: 5);
             Add(ItemType.Torch, "Torch", ItemCategory.Furniture, ColorRgb.Bytes(255, 190, 80), stack: 20);
+            Add(ItemType.Bucket, "Bucket", ItemCategory.Tool, ColorRgb.Bytes(150, 150, 160), stack: 4);
+            Add(ItemType.WaterBucket, "Water Bucket", ItemCategory.Tool, ColorRgb.Bytes(60, 120, 200), stack: 4);
         }
 
         private static void Add(ItemType type, string name, ItemCategory cat, ColorRgb color, float nutrition = 0f, int stack = 50)

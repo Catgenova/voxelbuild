@@ -24,6 +24,7 @@ object, the camera, the sun and the HDRP volume. The default world is 48 m × 24
 | `PgUp` / `PgDn`, `[` / `]`, `Ctrl` + wheel | Move the view level (cut the world open to see underground) |
 | `Home` | View level back to the top |
 | `1`–`5` | Select / Mine / Build / Stockpile / Cancel tool |
+| `6` / `7` | Drain water / Pour water orders (need a bucket) |
 | Left-drag | Apply the current tool to a box of blocks |
 | Right-click / `Esc` | Back to the Select tool, then clear selection |
 | `Space` | Pause / resume |
@@ -89,6 +90,11 @@ Tests/EditMode/      NUnit tests for the engine-free layers
   equalise sideways, waking only cells near a change so still lakes are free. Lakes are flood-filled
   below sea level at generation. Colonists wade water up to two blocks deep and treat deeper water as
   impassable. The surface is a transparent Lit material with box refraction and a drifting ripple map.
+- **Springs and buckets.** The surface layer of every natural lake is an infinite spring, and a full
+  cell flanked by two springs becomes one, so a 2x2 pool made with buckets never runs dry. Buckets
+  are forged at the workbench (iron ore and a plank). **Drain** orders scoop a cell away, spring or
+  not; **Pour** orders have a colonist fill a bucket at the nearest spring and empty it into the
+  cell. Both fall under the new Water work priority.
 - **HDR without hassle.** Materials are cloned from the pipeline's default Lit material so shaders are
   always included in builds. Overlays use HDRP emissive with exposure weight 0 so they read the same at
   noon and midnight.
@@ -103,7 +109,7 @@ haul, eat, sleep) driven purely through `GameContext.Tick`.
 ## Roadmap
 
 - Save / load (chunk RLE + colonist state)
-- Falling blocks (sand, gravel), infinite water sources and buckets
+- Falling blocks (sand, gravel), irrigation and crops that need water
 - More needs (recreation, warmth), moods with consequences, skills that speed up work
 - Farming, cooking, and a proper food chain
 - Threats: wildlife, weather, raids

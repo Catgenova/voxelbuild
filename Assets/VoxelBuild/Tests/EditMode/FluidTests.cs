@@ -110,6 +110,60 @@ namespace VoxelBuild.Tests
         }
 
         [Test]
+        public void SpringsRefillAndDrainOrdersRemoveThem()
+        {
+            var world = TestWorld.Flat();
+            var sim = new FluidSim(world);
+            var spring = Feet(5, 5);
+            sim.SetSource(spring, true);
+            Assert.IsTrue(sim.IsSource(spring));
+            Assert.AreEqual(FluidSim.Max, sim.Level(spring));
+
+            Assert.AreEqual(FluidSim.Max, sim.Draw(spring), "a bucket from a spring is always full");
+            Assert.AreEqual(FluidSim.Max, sim.Level(spring), "and the spring stays full");
+
+            Settle(sim, 200);
+            Assert.Greater(sim.CellCount, 5, "a spring keeps feeding its surroundings");
+            Assert.AreEqual(FluidSim.Max, sim.Level(spring));
+
+            Assert.AreEqual(FluidSim.Max, sim.Scoop(spring));
+            Assert.IsFalse(sim.IsSource(spring), "scooping removes the spring");
+            Assert.AreEqual(0, sim.Level(spring));
+        }
+
+        [Test]
+        public void FullCellBetweenTwoSpringsBecomesASpring()
+        {
+            var world = TestWorld.Flat();
+            var sim = new FluidSim(world);
+            var a = Feet(5, 5);
+            var b = Feet(7, 5);
+            var middle = Feet(6, 5);
+            sim.SetSource(a, true);
+            sim.SetSource(b, true);
+            sim.Pour(middle, FluidSim.Max);
+            Settle(sim, 50);
+            Assert.IsTrue(sim.IsSource(middle), "an infinite pool forms between two springs");
+        }
+
+        [Test]
+        public void LakeSurfacesAreSpringsAndBucketsPourWater()
+        {
+            var world = TestWorld.Flat();
+            var basin = new IntBox(new Int3(4, Floor - 1, 4), new Int3(6, Floor, 6));
+            foreach (var c in basin.Cells()) world.SetBlockRaw(c, BlockType.Water);
+            var sim = new FluidSim(world);
+            Assert.AreEqual(9, sim.SourceCount, "only the surface layer is infinite");
+            Assert.IsTrue(sim.IsSource(new Int3(5, Floor, 5)));
+            Assert.IsFalse(sim.IsSource(new Int3(5, Floor - 1, 5)));
+
+            var target = Feet(15, 15);
+            Assert.AreEqual(FluidSim.Max, sim.Pour(target, FluidSim.Max));
+            Assert.AreEqual(BlockType.Water, world.GetBlock(target));
+            Assert.AreEqual(0, sim.Pour(target, 1), "a full cell takes nothing");
+        }
+
+        [Test]
         public void MesherSplitsCrystalAndWaterFromTerrain()
         {
             var world = new VoxelWorld(new Int3(1, 1, 1));

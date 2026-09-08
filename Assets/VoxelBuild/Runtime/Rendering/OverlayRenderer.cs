@@ -12,11 +12,13 @@ namespace VoxelBuild.Rendering
         private GameContext ctx;
         private WorldRenderer worldRenderer;
 
-        private OutlineMesh mineMesh, buildMesh, stockpileMesh, cursorMesh, selectionMesh;
+        private OutlineMesh mineMesh, buildMesh, drainMesh, pourMesh, stockpileMesh, cursorMesh, selectionMesh;
         private bool ordersDirty = true;
 
         private static readonly Color MineColor = new Color(1f, 0.55f, 0.1f);
         private static readonly Color BuildColor = new Color(0.3f, 0.7f, 1f);
+        private static readonly Color DrainColor = new Color(0.3f, 0.95f, 1f);
+        private static readonly Color PourColor = new Color(0.35f, 0.5f, 1f);
         private static readonly Color StockpileColor = new Color(0.35f, 0.55f, 0.3f);
         private static readonly Color CursorColor = new Color(1f, 1f, 1f);
         private static readonly Color SelectionColor = new Color(0.4f, 1f, 0.5f);
@@ -33,6 +35,8 @@ namespace VoxelBuild.Rendering
             this.worldRenderer = worldRenderer;
             mineMesh = MakeLayer("Mine Orders", MineColor);
             buildMesh = MakeLayer("Build Orders", BuildColor);
+            drainMesh = MakeLayer("Drain Orders", DrainColor);
+            pourMesh = MakeLayer("Pour Orders", PourColor);
             stockpileMesh = MakeLayer("Stockpiles", StockpileColor);
             cursorMesh = MakeLayer("Cursor", CursorColor);
             selectionMesh = MakeLayer("Selection", SelectionColor);
@@ -74,16 +78,25 @@ namespace VoxelBuild.Rendering
             int slice = worldRenderer.SliceY;
             mineMesh.Clear();
             buildMesh.Clear();
+            drainMesh.Clear();
+            pourMesh.Clear();
             foreach (var d in ctx.Jobs.Designations)
             {
                 if (d.Cell.y > slice) continue;
-                var min = worldRenderer.CellToWorld(d.Cell);
-                var max = min + Vector3.one * bs;
-                if (d.Kind == DesignationKind.Mine) mineMesh.AddBoxOutline(min + Vector3.one * t, max - Vector3.one * t, t);
-                else buildMesh.AddBoxOutline(min + Vector3.one * t, max - Vector3.one * t, t);
+                var min = worldRenderer.CellToWorld(d.Cell) + Vector3.one * t;
+                var max = worldRenderer.CellToWorld(d.Cell) + Vector3.one * (bs - t);
+                switch (d.Kind)
+                {
+                    case DesignationKind.Mine: mineMesh.AddBoxOutline(min, max, t); break;
+                    case DesignationKind.Build: buildMesh.AddBoxOutline(min, max, t); break;
+                    case DesignationKind.Drain: drainMesh.AddBoxOutline(min, max, t); break;
+                    default: pourMesh.AddBoxOutline(min, max, t); break;
+                }
             }
             mineMesh.Apply();
             buildMesh.Apply();
+            drainMesh.Apply();
+            pourMesh.Apply();
 
             stockpileMesh.Clear();
             foreach (var c in ctx.Stockpiles.Cells)

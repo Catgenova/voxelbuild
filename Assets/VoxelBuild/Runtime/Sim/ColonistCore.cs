@@ -30,14 +30,16 @@ namespace VoxelBuild.Sim
         Mine = 1,
         Craft = 2,
         Haul = 3,
-        Count = 4,
+        /// <summary>Bucket work: drain and pour orders.</summary>
+        Water = 4,
+        Count = 5,
     }
 
     /// <summary>RimWorld-style work priorities: 0 = never, 1 = first, 4 = last.</summary>
     public sealed class WorkPriorities
     {
         public const int MaxPriority = 4;
-        private readonly int[] priority = { 2, 2, 3, 3 };
+        private readonly int[] priority = { 2, 2, 3, 3, 3 };
 
         public int Get(WorkType w) => priority[(int)w];
 
@@ -362,6 +364,19 @@ namespace VoxelBuild.Sim
                         return true;
                     });
                     return bill != null ? new CraftJob(bill) : null;
+                }
+                case WorkType.Water:
+                {
+                    bool hasFull = Inventory.Count(ItemType.WaterBucket) > 0;
+                    bool bucketAvailable = hasFull || Inventory.Count(ItemType.Bucket) > 0
+                                           || Ctx.Items.TotalOf(ItemType.Bucket) > 0 || Ctx.Items.TotalOf(ItemType.WaterBucket) > 0;
+                    if (!bucketAvailable) return null;
+                    var pour = jobs.FindNearest(Cell, DesignationKind.Pour, this, now, x => Ctx.World.GetBlock(x.Cell) != BlockType.Water || Ctx.Fluids.Level(x.Cell) < FluidSim.Max);
+                    var drain = jobs.FindNearest(Cell, DesignationKind.Drain, this, now, x => Ctx.Fluids.Level(x.Cell) > 0);
+                    if (hasFull && pour != null) return new PourJob(pour);
+                    if (drain != null) return new DrainJob(drain);
+                    if (pour != null && (hasFull || Ctx.Fluids.CellCount > 0)) return new PourJob(pour);
+                    return null;
                 }
                 case WorkType.Haul:
                 {

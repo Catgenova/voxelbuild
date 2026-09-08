@@ -16,6 +16,10 @@ namespace VoxelBuild.Player
         Build,
         Stockpile,
         Cancel,
+        /// <summary>Order water cells scooped away with buckets.</summary>
+        Drain,
+        /// <summary>Order buckets of water poured into cells.</summary>
+        Pour,
     }
 
     /// <summary>Mouse and keyboard interaction with the world: designations, zones, selection and the view slice.</summary>
@@ -110,7 +114,8 @@ namespace VoxelBuild.Player
                 adjacentCell = worldRenderer.WorldToCell(hit.point + hit.normal * (bs * 0.5f));
             }
 
-            bool useAdjacent = CurrentTool == Tool.Build || CurrentTool == Tool.Stockpile;
+            bool useAdjacent = CurrentTool == Tool.Build || CurrentTool == Tool.Stockpile
+                               || CurrentTool == Tool.Drain || CurrentTool == Tool.Pour;
             Int3 hover = useAdjacent ? adjacentCell : blockCell;
             if (hitTerrain) lastHover = hover;
             HoverCell = hitTerrain ? hover : (Int3?)null;
@@ -174,6 +179,8 @@ namespace VoxelBuild.Player
             if (kb.digit3Key.wasPressedThisFrame) SetTool(Tool.Build);
             if (kb.digit4Key.wasPressedThisFrame) SetTool(Tool.Stockpile);
             if (kb.digit5Key.wasPressedThisFrame) SetTool(Tool.Cancel);
+            if (kb.digit6Key.wasPressedThisFrame) SetTool(Tool.Drain);
+            if (kb.digit7Key.wasPressedThisFrame) SetTool(Tool.Pour);
 
             int sliceDelta = 0;
             if (kb.pageDownKey.wasPressedThisFrame || kb.leftBracketKey.wasPressedThisFrame) sliceDelta--;
@@ -193,6 +200,8 @@ namespace VoxelBuild.Player
                 case Tool.Build: return new Color(0.4f, 0.75f, 1f);
                 case Tool.Stockpile: return new Color(0.5f, 0.9f, 0.5f);
                 case Tool.Cancel: return new Color(1f, 0.3f, 0.3f);
+                case Tool.Drain: return new Color(0.3f, 0.95f, 1f);
+                case Tool.Pour: return new Color(0.35f, 0.5f, 1f);
                 default: return Color.white;
             }
         }
@@ -217,6 +226,19 @@ namespace VoxelBuild.Player
                 case Tool.Stockpile:
                     ctx.Stockpiles.AddBox(box);
                     break;
+                case Tool.Drain:
+                {
+                    int n = ctx.Jobs.AddDrainBox(box);
+                    if (n > 0) ctx.Log($"Ordered {n} water cells drained (needs a bucket)");
+                    else ctx.Log("Drain: drag over water");
+                    break;
+                }
+                case Tool.Pour:
+                {
+                    int n = ctx.Jobs.AddPourBox(box);
+                    if (n > 0) ctx.Log($"Ordered {n} buckets of water poured");
+                    break;
+                }
                 case Tool.Cancel:
                 {
                     int n = ctx.Jobs.CancelBox(box);

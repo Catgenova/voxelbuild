@@ -132,6 +132,8 @@ namespace VoxelBuild.UI
             AddToolButton(panel, Tool.Build, "Build  [3]");
             AddToolButton(panel, Tool.Stockpile, "Stockpile  [4]");
             AddToolButton(panel, Tool.Cancel, "Cancel  [5]");
+            AddToolButton(panel, Tool.Drain, "Drain water  [6]");
+            AddToolButton(panel, Tool.Pour, "Pour water  [7]");
             UiFactory.Button(panel, "Craft by hand", () => { handCrafting = true; tools.ClearSelection(); contextDirty = true; });
 
             UiFactory.Label(panel, "Build with", 15, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
@@ -406,6 +408,11 @@ namespace VoxelBuild.UI
             contextTitle.text = def.Name;
             UiFactory.Label(contextBody, $"Position {cell}", 12, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
 
+            if (block == BlockType.Water)
+            {
+                int level = ctx.Fluids.Level(cell);
+                UiFactory.Label(contextBody, ctx.Fluids.IsSource(cell) ? $"Spring (infinite), level {level}/{FluidSim.Max}" : $"Level {level}/{FluidSim.Max}", 12);
+            }
             var pile = ctx.Items.HasItems(cell) ? cell : cell + Int3.Up;
             if (ctx.Items.HasItems(pile))
             {
@@ -417,7 +424,15 @@ namespace VoxelBuild.UI
             var order = ctx.Jobs.Get(cell);
             if (order != null)
             {
-                UiFactory.Label(contextBody, order.Kind == DesignationKind.Mine ? "Ordered: mine" : "Ordered: build " + BlockRegistry.Get(order.BuildType).Name, 12);
+                string orderText;
+                switch (order.Kind)
+                {
+                    case DesignationKind.Mine: orderText = "Ordered: mine"; break;
+                    case DesignationKind.Build: orderText = "Ordered: build " + BlockRegistry.Get(order.BuildType).Name; break;
+                    case DesignationKind.Drain: orderText = "Ordered: drain"; break;
+                    default: orderText = "Ordered: pour water"; break;
+                }
+                UiFactory.Label(contextBody, orderText, 12);
                 UiFactory.Button(contextBody, "Cancel order", () => ctx.Jobs.Cancel(cell), 0f, 26f);
             }
             else if (def.IsMinable)
