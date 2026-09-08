@@ -10,7 +10,7 @@ namespace VoxelBuild.Player
     public sealed class IsometricCameraController : MonoBehaviour
     {
         public float Pitch = 35f;
-        public float MinOrthoSize = 3f;
+        public float MinOrthoSize = 0.8f;   // half the visible height in metres: a handful of blocks fill the screen
         public float MaxOrthoSize = 40f;
         public float PanSpeed = 1.2f;       // fraction of the visible height per second
         public float ZoomStep = 0.12f;
