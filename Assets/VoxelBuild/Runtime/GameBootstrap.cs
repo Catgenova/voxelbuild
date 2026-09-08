@@ -62,8 +62,37 @@ namespace VoxelBuild
 
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning("VoxelBuild: a second GameBootstrap was found and disabled.", this);
+                enabled = false;
+                return;
+            }
             Instance = this;
-            Build();
+            Debug.Log("VoxelBuild: bootstrap starting");
+            try
+            {
+                Build();
+                Debug.Log("VoxelBuild: bootstrap finished");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("VoxelBuild: startup failed. " + e, this);
+                enabled = false;
+            }
+        }
+
+        /// <summary>
+        /// Safety net: if the scene has no (working) GameBootstrap, for example a stale scene or a missing-script
+        /// reference, create one so pressing Play always starts the game.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void EnsureBootstrap()
+        {
+            if (Instance != null) return;
+            if (FindFirstObjectByType<GameBootstrap>() != null) return;
+            Debug.LogWarning("VoxelBuild: no GameBootstrap found in the scene; creating one automatically.");
+            new GameObject("Game (auto)").AddComponent<GameBootstrap>();
         }
 
         private void Build()
@@ -208,6 +237,7 @@ namespace VoxelBuild
 
         private void Update()
         {
+            if (Ctx == null) return;
             var kb = Keyboard.current;
             if (kb != null && kb.spaceKey.wasPressedThisFrame)
             {
