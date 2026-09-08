@@ -18,6 +18,7 @@ namespace VoxelBuild.Sim
         public readonly Pathfinder Pathfinder;
         public readonly BlockIndex Index;
         public readonly FluidSim Fluids;
+        public readonly TreeFeller Trees;
         public readonly List<ColonistCore> Colonists = new List<ColonistCore>();
         public readonly Random Random;
 
@@ -34,6 +35,7 @@ namespace VoxelBuild.Sim
             Pathfinder = new Pathfinder(world);
             Index = new BlockIndex(world);
             Fluids = new FluidSim(world);
+            Trees = new TreeFeller(this);
             Random = new Random(seed);
         }
 
@@ -45,6 +47,7 @@ namespace VoxelBuild.Sim
             if (simDt <= 0f) return;
             Clock.Advance(simDt);
             Fluids.Tick(simDt);
+            Trees.Tick();
             for (int i = 0; i < Colonists.Count; i++)
                 Colonists[i].Tick(simDt);
         }

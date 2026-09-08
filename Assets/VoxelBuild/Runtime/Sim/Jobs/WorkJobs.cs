@@ -71,6 +71,7 @@ namespace VoxelBuild.Sim.Jobs
                 int rest = def.Drop.Count - added;
                 if (rest > 0) c.Ctx.Items.AddNear(d.Cell, def.Drop.Type, rest);
             }
+            if (block == BlockType.Log) c.Ctx.Trees.OnLogRemoved(d.Cell, c.Cell);
             jobs.Complete(d);
             return JobStatus.Done;
         }

@@ -70,6 +70,44 @@ namespace VoxelBuild.World
         /// <summary>Non-solid decorative blocks (torches) render as a shrunken box with these extents.</summary>
         private const float DecorMinXZ = 0.35f, DecorMaxXZ = 0.65f, DecorMaxY = 0.7f;
 
+        /// <summary>Block query over a small set of cells (used to mesh effects such as falling trees).</summary>
+        private sealed class SparseBlocks : IBlockQuery
+        {
+            private readonly Dictionary<Int3, BlockType> cells = new Dictionary<Int3, BlockType>();
+            public Int3 SizeInBlocks => new Int3(int.MaxValue, int.MaxValue, int.MaxValue);
+            public bool InBounds(Int3 p) => true;
+            public BlockType GetBlock(Int3 p) => cells.TryGetValue(p, out var t) ? t : BlockType.Air;
+            public void Set(Int3 p, BlockType t) => cells[p] = t;
+        }
+
+        /// <summary>
+        /// Meshes an arbitrary set of blocks with positions relative to <paramref name="origin"/> (in world units).
+        /// Faces between cells of the set are culled like normal terrain.
+        /// </summary>
+        public static void BuildCells(IEnumerable<(Int3 cell, BlockType type)> blocks, Int3 origin, float blockSize, MeshData data)
+        {
+            data.Clear();
+            AtlasLayout.EnsureInit();
+            var sparse = new SparseBlocks();
+            var list = new List<(Int3, BlockType)>();
+            foreach (var b in blocks)
+            {
+                sparse.Set(b.cell, b.type);
+                list.Add(b);
+            }
+            foreach (var (cell, type) in list)
+            {
+                var def = BlockRegistry.Get(type);
+                var local = cell - origin;
+                for (int f = 0; f < 6; f++)
+                {
+                    var n = cell + Directions.Offsets[f];
+                    if (BlockRegistry.IsOpaque(sparse.GetBlock(n))) continue;
+                    AddFace(data, local.x, local.y, local.z, f, def.TileFor((Direction)f), blockSize, !def.IsOpaque, RotationFor(def, cell, f));
+                }
+            }
+        }
+
         /// <summary>Full build: opaque faces, translucent (crystal) faces and fluid surfaces into separate buffers.</summary>
         public static void Build(IBlockQuery world, Int3 chunkCoord, int sliceY, float blockSize, IFluidLevels fluids,
             MeshData data, MeshData translucent, MeshData water)

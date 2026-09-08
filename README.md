@@ -96,6 +96,10 @@ Tests/EditMode/      NUnit tests for the engine-free layers
   equalise sideways, waking only cells near a change so still lakes are free. Lakes are flood-filled
   below sea level at generation. Colonists wade water up to two blocks deep and treat deeper water as
   impassable. The surface is a transparent Lit material with box refraction and a drifting ripple map.
+- **Trees fall.** Cutting a log frees everything above it that no longer rests on the ground: the
+  trunk and its attached canopy topple away from the woodcutter (a one-off mesh rotating about the
+  base), and the logs land along the fall line as pick-up items. Cut the middle and only the top comes
+  down; logs propped on other logs stay up.
 - **Springs and buckets.** The surface layer of every natural lake is an infinite spring, and a full
   cell flanked by two springs becomes one, so a 2x2 pool made with buckets never runs dry. Buckets
   are forged at the workbench (iron ore and a plank). **Drain** orders scoop a cell away, spring or

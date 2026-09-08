@@ -51,6 +51,7 @@ namespace VoxelBuild
         public WorldRenderer WorldRenderer { get; private set; }
         public ItemRenderer ItemRenderer { get; private set; }
         public OverlayRenderer Overlay { get; private set; }
+        public TreeFallRenderer TreeFalls { get; private set; }
         public PlayerTools Tools { get; private set; }
         public IsometricCameraController CameraController { get; private set; }
         public Hud Hud { get; private set; }
@@ -131,6 +132,10 @@ namespace VoxelBuild
             Overlay = new GameObject("Overlay").AddComponent<OverlayRenderer>();
             Overlay.transform.SetParent(transform, false);
             Overlay.Init(Ctx, WorldRenderer);
+
+            TreeFalls = new GameObject("Tree Falls").AddComponent<TreeFallRenderer>();
+            TreeFalls.transform.SetParent(transform, false);
+            TreeFalls.Init(Ctx, WorldRenderer, atlas.TerrainMaterial);
 
             var spawn = WorldGenerator.FindSpawn(world);
             var font = LoadFont();
