@@ -29,6 +29,14 @@ namespace VoxelBuild
         /// <summary>Metres per block, fixed by <see cref="Scale"/>.</summary>
         public float BlockSize => Scale.BlockSize;
 
+        [Header("Look")]
+        [Tooltip("Parallax occlusion mapping on block faces (HDRP pixel displacement).")]
+        public bool ParallaxOcclusion = true;
+        [Tooltip("Apparent depth of the surface relief in centimetres.")]
+        [Range(0.2f, 5f)] public float ReliefDepthCm = 1.5f;
+        [Tooltip("Ray-march samples for parallax. Higher is smoother at grazing angles but costs GPU time.")]
+        [Range(8, 64)] public int ParallaxMaxSamples = 24;
+
         [Header("Colony")]
         public int ColonistCount = 3;
         public int DayLengthSeconds = 600;
@@ -98,7 +106,13 @@ namespace VoxelBuild
 
         private void Build()
         {
-            var atlas = BlockAtlas.Create();
+            var atlas = BlockAtlas.Create(new BlockAtlas.Options
+            {
+                ParallaxOcclusion = ParallaxOcclusion,
+                ReliefDepth = ReliefDepthCm * 0.01f,
+                MinSamples = 6,
+                MaxSamples = ParallaxMaxSamples,
+            });
 
             var world = new VoxelWorld(new Int3(Mathf.Max(1, ChunksX), Mathf.Max(1, ChunksY), Mathf.Max(1, ChunksZ)));
             new WorldGenerator { Seed = Seed, Caves = Caves }.Generate(world);

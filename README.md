@@ -80,7 +80,9 @@ Tests/EditMode/      NUnit tests for the engine-free layers
   smoothness) and feeds them all to one Lit material. Dirt is grainy with embedded pebbles, stone is
   cracked and mottled, ore has glossy metallic nuggets, crystal is faceted and glows, planks have
   grain and seams, bricks have recessed mortar. Faces are randomly quarter-turned per block where the
-  art allows, so the repetition is hard to spot.
+  art allows, so the repetition is hard to spot. The same height field drives HDRP pixel displacement
+  (parallax occlusion mapping), so pebbles, cracks and mortar lines have real apparent depth; the
+  relief depth and sample count are exposed on the `Game` object.
 - **HDR without hassle.** Materials are cloned from the pipeline's default Lit material so shaders are
   always included in builds. Overlays use HDRP emissive with exposure weight 0 so they read the same at
   noon and midnight.

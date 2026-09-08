@@ -17,11 +17,28 @@ namespace VoxelBuild.Rendering
         public Texture2D Normal { get; private set; }
         public Texture2D Mask { get; private set; }
         public Texture2D Emissive { get; private set; }
+        public Texture2D Height { get; private set; }
         public Material TerrainMaterial { get; private set; }
 
         public static Color ToColor(ColorRgb c) => new Color(c.r, c.g, c.b, 1f);
 
-        public static BlockAtlas Create()
+        /// <summary>Options for the terrain material.</summary>
+        public struct Options
+        {
+            /// <summary>Enable HDRP pixel displacement (parallax occlusion mapping) on block faces.</summary>
+            public bool ParallaxOcclusion;
+            /// <summary>How deep the relief appears to sink into the face, in metres.</summary>
+            public float ReliefDepth;
+            /// <summary>Ray-march sample bounds; more samples cost more but avoid stepping artefacts at grazing angles.</summary>
+            public int MinSamples;
+            public int MaxSamples;
+
+            public static Options Default => new Options { ParallaxOcclusion = true, ReliefDepth = 0.015f, MinSamples = 6, MaxSamples = 24 };
+        }
+
+        public static BlockAtlas Create() => Create(Options.Default);
+
+        public static BlockAtlas Create(Options options)
         {
             AtlasLayout.EnsureInit();
             var atlas = new BlockAtlas();
@@ -34,6 +51,7 @@ namespace VoxelBuild.Rendering
             var normal = new Color32[size * size];
             var mask = new Color32[size * size];
             var emissive = new Color32[size * size];
+            var height = new Color32[size * size];
             bool anyEmissive = false;
 
             for (int t = 0; t < AtlasLayout.TileCount; t++)
@@ -60,6 +78,8 @@ namespace VoxelBuild.Rendering
                         mask[dst] = new Color(px.Metallic[src], px.AO[src], 0f, px.Smoothness[src]);
                         var e = px.Emissive[src];
                         emissive[dst] = new Color(Mathf.Min(1f, e.r), Mathf.Min(1f, e.g), Mathf.Min(1f, e.b), 1f);
+                        float h = px.Height[src];
+                        height[dst] = new Color(h, h, h, 1f);
                     }
             }
 
@@ -67,6 +87,7 @@ namespace VoxelBuild.Rendering
             atlas.Normal = MakeTexture("BlockAtlasNormal", size, normal, true, FilterMode.Trilinear);
             atlas.Mask = MakeTexture("BlockAtlasMask", size, mask, true, FilterMode.Trilinear);
             atlas.Emissive = MakeTexture("BlockAtlasEmissive", size, emissive, true, FilterMode.Bilinear);
+            atlas.Height = MakeTexture("BlockAtlasHeight", size, height, true, FilterMode.Trilinear);
 
             var mat = CreateLitMaterial("Terrain");
             mat.SetTexture("_BaseColorMap", atlas.Albedo);
@@ -84,6 +105,7 @@ namespace VoxelBuild.Rendering
             mat.SetFloat("_AORemapMax", 1f);
             mat.EnableKeyword("_NORMALMAP");
             mat.EnableKeyword("_MASKMAP");
+            if (options.ParallaxOcclusion) EnableParallax(mat, atlas.Height, options, per);
             if (anyEmissive)
             {
                 mat.SetTexture("_EmissiveColorMap", atlas.Emissive);
@@ -94,6 +116,36 @@ namespace VoxelBuild.Rendering
             HDMaterial.ValidateMaterial(mat);
             atlas.TerrainMaterial = mat;
             return atlas;
+        }
+
+        /// <summary>
+        /// HDRP pixel displacement (parallax occlusion mapping). The relief is recessed into the face (height centre = 1)
+        /// so block silhouettes stay intact and the ray march never leaves the padded tile.
+        /// </summary>
+        private static void EnableParallax(Material mat, Texture2D heightMap, Options options, int tilesPerRow)
+        {
+            mat.SetTexture("_HeightMap", heightMap);
+            mat.SetFloat("_DisplacementMode", 2f);          // 0 none, 1 vertex, 2 pixel
+            mat.SetFloat("_DisplacementLockObjectScale", 1f);
+            mat.SetFloat("_DisplacementLockTilingScale", 1f);
+            mat.SetFloat("_DepthOffsetEnable", 0f);
+            mat.SetFloat("_HeightMapParametrization", 1f);  // amplitude mode
+            mat.SetFloat("_HeightAmplitude", Mathf.Max(0.001f, options.ReliefDepth));
+            mat.SetFloat("_HeightCenter", 1f);
+            mat.SetFloat("_HeightPoMAmplitude", options.ReliefDepth * 100f); // inspector mirror, in cm
+            mat.SetFloat("_HeightOffset", 0f);
+            mat.SetFloat("_PPDMinSamples", Mathf.Max(1, options.MinSamples));
+            mat.SetFloat("_PPDMaxSamples", Mathf.Max(options.MinSamples, options.MaxSamples));
+            mat.SetFloat("_PPDLodThreshold", 5f);
+            // World size covered by the 0..1 UV range: one face is Scale.BlockSize and the atlas holds tilesPerRow tiles,
+            // each of which shows two faces' worth of pattern (face plus padding).
+            float uvSpanMetres = tilesPerRow * 2f * Scale.BlockSize;
+            mat.SetFloat("_PPDPrimitiveLength", uvSpanMetres);
+            mat.SetFloat("_PPDPrimitiveWidth", uvSpanMetres);
+            mat.SetVector("_InvPrimScale", new Vector4(1f / uvSpanMetres, 1f / uvSpanMetres, 0f, 0f));
+            mat.EnableKeyword("_HEIGHTMAP");
+            mat.EnableKeyword("_PIXEL_DISPLACEMENT");
+            mat.EnableKeyword("_PIXEL_DISPLACEMENT_LOCK_OBJECT_SCALE");
         }
 
         private static Texture2D MakeTexture(string name, int size, Color32[] pixels, bool linear, FilterMode filter)
