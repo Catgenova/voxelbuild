@@ -306,6 +306,7 @@ namespace VoxelBuild.Sim
 
         private bool FoodAvailable()
         {
+            if (!Needs.HungerEnabled) return false;
             if (Inventory.HasAnyEdible()) return true;
             if (Ctx.Now - FoodSearchFailedAt < 20f) return false;
             return true; // EatJob searches piles and bushes itself

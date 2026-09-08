@@ -84,7 +84,7 @@ namespace VoxelBuild.UI
             RefreshToolButtons();
             RefreshSpeedButtons();
             RefreshSlice();
-            Log("Welcome. Mine logs, build a Carpentry Bench from 4 logs, then queue planks on it. Keep your colonists fed.");
+            Log("Welcome. Mine logs, build a Carpentry Bench from 4 logs, then queue planks on it.");
         }
 
         // ------------------------------------------------------------------ Layout
@@ -183,7 +183,8 @@ namespace VoxelBuild.UI
             var name = UiFactory.Label(rt, core.Name, 14);
             name.color = BlockAtlas.ToColor(core.Color) * 0.6f + Color.white * 0.4f;
             var activity = UiFactory.Label(rt, "Idle", 12, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
-            var food = UiFactory.Bar(rt, new Color(0.9f, 0.6f, 0.2f), 7f);
+            RectTransform food = null;
+            if (Needs.HungerEnabled) food = UiFactory.Bar(rt, new Color(0.9f, 0.6f, 0.2f), 7f);
             var rest = UiFactory.Bar(rt, new Color(0.4f, 0.55f, 1f), 7f);
             cards.Add(new ColonistCard { Core = core, Root = btn, Activity = activity, Food = food, Rest = rest });
         }
@@ -306,7 +307,7 @@ namespace VoxelBuild.UI
             foreach (var card in cards)
             {
                 card.Activity.text = card.Core.Activity;
-                UiFactory.SetBar(card.Food, card.Core.Needs.Food);
+                if (card.Food != null) UiFactory.SetBar(card.Food, card.Core.Needs.Food);
                 UiFactory.SetBar(card.Rest, card.Core.Needs.Rest);
                 card.Root.GetComponent<Image>().color = tools.SelectedColonist == card.Core
                     ? new Color(0.25f, 0.3f, 0.2f, 0.95f)
@@ -347,8 +348,12 @@ namespace VoxelBuild.UI
         {
             contextTitle.text = c.Name;
             dynamicTexts.Add(UiFactory.Label(contextBody, "", 13));
-            UiFactory.Label(contextBody, "Food", 12, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
-            dynamicBars.Add(UiFactory.Bar(contextBody, new Color(0.9f, 0.6f, 0.2f)));
+            if (Needs.HungerEnabled)
+            {
+                UiFactory.Label(contextBody, "Food", 12, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
+                dynamicBars.Add(UiFactory.Bar(contextBody, new Color(0.9f, 0.6f, 0.2f)));
+            }
+            else dynamicBars.Add(null);
             UiFactory.Label(contextBody, "Rest", 12, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
             dynamicBars.Add(UiFactory.Bar(contextBody, new Color(0.4f, 0.55f, 1f)));
             UiFactory.Label(contextBody, "Mood", 12, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
@@ -385,7 +390,7 @@ namespace VoxelBuild.UI
             var c = tools.SelectedColonist;
             if (c == null || dynamicTexts.Count < 2 || dynamicBars.Count < 3) return;
             dynamicTexts[0].text = $"{c.Activity}\nJob: {(c.CurrentJob != null ? c.CurrentJob.Label : "none")}   at {c.Cell}";
-            UiFactory.SetBar(dynamicBars[0], c.Needs.Food);
+            if (dynamicBars[0] != null) UiFactory.SetBar(dynamicBars[0], c.Needs.Food);
             UiFactory.SetBar(dynamicBars[1], c.Needs.Rest);
             UiFactory.SetBar(dynamicBars[2], c.Needs.Mood);
             sb.Clear();

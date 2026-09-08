@@ -33,7 +33,8 @@ Typical first minutes: drag the **Mine** tool over a hillside to gather stone an
 **Stockpile** zone so hauled goods land in one place, build a **Carpentry Bench** from the starting
 logs and queue **planks** on it, then build a **Workbench** from planks for stone work, and beds and
 torches for the night. Colonists eat berries from piles or forage wild bushes when hungry, and sleep
-in beds (or on the ground) when tired.
+in beds (or on the ground) when tired. Hunger is switched off for now (the `Hunger Enabled` box on the
+`Game` object turns it back on, along with berry supplies, foraging and eating).
 
 Raw harvested blocks (dirt, stone, sand, gravel, clay, logs, ores, crystal) can be placed straight
 back down from the items they drop. Anything else is processed at a workshop: the Carpentry Bench

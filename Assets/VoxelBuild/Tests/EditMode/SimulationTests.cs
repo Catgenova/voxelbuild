@@ -128,16 +128,39 @@ namespace VoxelBuild.Tests
         }
 
         [Test]
-        public void HungryColonistEatsFromAPile()
+        public void HungerIsOffByDefault()
         {
+            Assert.IsFalse(Needs.HungerEnabled);
             var world = TestWorld.Flat();
             var ctx = TestWorld.Context(world);
             var c = TestWorld.Colonist(ctx, Feet(3, 3));
-            c.Needs.Food = 0.2f;
+            c.Needs.Food = 0.1f;
             ctx.Items.Add(Feet(8, 8), ItemType.Berries, 6);
+            ctx.Tick(5f);
+            Assert.AreEqual(1f, c.Needs.Food, "food is pinned full while hunger is off");
+            Assert.IsFalse(c.Needs.IsHungry);
+            Assert.AreEqual(6, ctx.TotalItems(ItemType.Berries), "nobody eats");
+        }
 
-            Assert.IsTrue(TestWorld.RunUntil(ctx, () => c.Needs.Food > 0.85f, 90f), $"colonist should eat; {c.Activity}");
-            Assert.Less(ctx.TotalItems(ItemType.Berries), 6);
+        [Test]
+        public void HungryColonistEatsFromAPileWhenHungerIsOn()
+        {
+            Needs.HungerEnabled = true;
+            try
+            {
+                var world = TestWorld.Flat();
+                var ctx = TestWorld.Context(world);
+                var c = TestWorld.Colonist(ctx, Feet(3, 3));
+                c.Needs.Food = 0.2f;
+                ctx.Items.Add(Feet(8, 8), ItemType.Berries, 6);
+
+                Assert.IsTrue(TestWorld.RunUntil(ctx, () => c.Needs.Food > 0.85f, 90f), $"colonist should eat; {c.Activity}");
+                Assert.Less(ctx.TotalItems(ItemType.Berries), 6);
+            }
+            finally
+            {
+                Needs.HungerEnabled = false;
+            }
         }
 
         [Test]

@@ -39,6 +39,8 @@ namespace VoxelBuild
 
         [Header("Colony")]
         public int ColonistCount = 3;
+        [Tooltip("Hunger is off for now. Turn on to make colonists need food again (berries, bushes).")]
+        public bool HungerEnabled = false;
         public int DayLengthSeconds = 600;
 
         [Header("Scene references (found automatically when empty)")]
@@ -118,6 +120,7 @@ namespace VoxelBuild
             var world = new VoxelWorld(new Int3(Mathf.Max(1, ChunksX), Mathf.Max(1, ChunksY), Mathf.Max(1, ChunksZ)));
             new WorldGenerator { Seed = Seed, Caves = Caves }.Generate(world);
 
+            Needs.HungerEnabled = HungerEnabled;
             Ctx = new GameContext(world, Seed);
             Ctx.Clock.DayLengthSeconds = Mathf.Max(30, DayLengthSeconds);
 
@@ -184,7 +187,7 @@ namespace VoxelBuild
                 }
                 core.Needs.Food = 0.7f + 0.2f * (float)rnd.NextDouble();
                 core.Needs.Rest = 0.8f + 0.2f * (float)rnd.NextDouble();
-                core.Inventory.Add(ItemType.Berries, 2);
+                if (HungerEnabled) core.Inventory.Add(ItemType.Berries, 2);
 
                 var cell = FindStandableNear(spawn, used, Scale.Metres(3f));
                 used.Add(cell);
@@ -202,7 +205,7 @@ namespace VoxelBuild
         {
             var used = new HashSet<Int3>();
             foreach (var c in Ctx.Colonists) used.Add(c.Cell);
-            Drop(ItemType.Berries, 10);
+            if (HungerEnabled) Drop(ItemType.Berries, 10);
             Drop(ItemType.Log, 10);
             Drop(ItemType.Stone, 6);
             Drop(ItemType.Bucket, 1);

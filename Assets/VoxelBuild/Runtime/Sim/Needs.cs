@@ -5,6 +5,9 @@ namespace VoxelBuild.Sim
     /// <summary>Colonist needs, all in 0..1 where 1 is fully satisfied.</summary>
     public sealed class Needs
     {
+        /// <summary>Hunger is switched off for now: food never drains and nobody eats. Flip to bring it back.</summary>
+        public static bool HungerEnabled = false;
+
         public float Food = 0.85f;
         public float Rest = 0.9f;
 
@@ -19,8 +22,8 @@ namespace VoxelBuild.Sim
         public const float TiredThreshold = 0.3f;
         public const float ExhaustedThreshold = 0.12f;
 
-        public bool IsHungry => Food < HungryThreshold;
-        public bool IsStarving => Food < StarvingThreshold;
+        public bool IsHungry => HungerEnabled && Food < HungryThreshold;
+        public bool IsStarving => HungerEnabled && Food < StarvingThreshold;
         public bool IsTired => Rest < TiredThreshold;
         public bool IsExhausted => Rest < ExhaustedThreshold;
 
@@ -29,7 +32,9 @@ namespace VoxelBuild.Sim
         {
             get
             {
-                float m = 0.5f + (Food - 0.5f) * 0.5f + (Rest - 0.5f) * 0.5f;
+                float m = HungerEnabled
+                    ? 0.5f + (Food - 0.5f) * 0.5f + (Rest - 0.5f) * 0.5f
+                    : 0.5f + (Rest - 0.5f);
                 return Clamp01(m);
             }
         }
@@ -51,7 +56,8 @@ namespace VoxelBuild.Sim
         public void Tick(float simDt, float dayLengthSeconds, bool sleeping, bool inBed)
         {
             float days = simDt / dayLengthSeconds;
-            Food = Clamp01(Food - FoodDecayPerDay * days * (sleeping ? 0.5f : 1f));
+            if (HungerEnabled) Food = Clamp01(Food - FoodDecayPerDay * days * (sleeping ? 0.5f : 1f));
+            else Food = 1f;
             if (sleeping)
                 Rest = Clamp01(Rest + (inBed ? RestRegainPerDayInBed : RestRegainPerDayOnGround) * days);
             else
