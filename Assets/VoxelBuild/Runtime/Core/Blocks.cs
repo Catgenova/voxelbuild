@@ -28,6 +28,10 @@ namespace VoxelBuild.Core
         Torch,
         Water,
         CarpentryBench,
+        /// <summary>Floor layer tiles: occupy the floor plane of a cell, never a full block.</summary>
+        PlankFloor,
+        StoneTiles,
+        Carpet,
         Count,
     }
 
@@ -66,6 +70,7 @@ namespace VoxelBuild.Core
         TorchSide,
         TorchTop,
         CarpentryTop,
+        Tiles,
     }
 
     public sealed class BlockDefinition
@@ -82,6 +87,8 @@ namespace VoxelBuild.Core
         public bool IsTranslucent;
         /// <summary>A liquid handled by the fluid simulation.</summary>
         public bool IsFluid;
+        /// <summary>Lives on the floor plane of a cell (thin slab colonists walk on) rather than filling the cell.</summary>
+        public bool IsFloor;
         /// <summary>Whether it can be mined at all (bedrock cannot).</summary>
         public bool IsMinable = true;
         /// <summary>Work seconds required to mine it.</summary>
@@ -317,6 +324,33 @@ namespace VoxelBuild.Core
             });
             Add(new BlockDefinition
             {
+                Type = BlockType.PlankFloor, Name = "Plank Floor", Category = BlockCategory.Construction, MineSeconds = 0.8f,
+                IsFloor = true, IsSolid = false, IsOpaque = false,
+                Drop = new ItemStack(ItemType.Planks, 1),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.Planks, 1), BuildSeconds = 0.8f,
+                TopColor = ColorRgb.Bytes(196, 156, 100), SideColor = ColorRgb.Bytes(170, 130, 80), BottomColor = ColorRgb.Bytes(150, 115, 70),
+                TextureNoise = 0.06f,
+            });
+            Add(new BlockDefinition
+            {
+                Type = BlockType.StoneTiles, Name = "Stone Tiles", Category = BlockCategory.Construction, MineSeconds = 1.2f,
+                IsFloor = true, IsSolid = false, IsOpaque = false,
+                Drop = new ItemStack(ItemType.StoneBrick, 1),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.StoneBrick, 1), BuildSeconds = 1.2f,
+                TopColor = ColorRgb.Bytes(150, 148, 150), SideColor = ColorRgb.Bytes(120, 118, 120), BottomColor = ColorRgb.Bytes(110, 110, 112),
+                TextureNoise = 0.05f,
+            });
+            Add(new BlockDefinition
+            {
+                Type = BlockType.Carpet, Name = "Carpet", Category = BlockCategory.Construction, MineSeconds = 0.4f,
+                IsFloor = true, IsSolid = false, IsOpaque = false,
+                Drop = new ItemStack(ItemType.Carpet, 1),
+                IsBuildable = true, BuildCost = new ItemStack(ItemType.Carpet, 1), BuildSeconds = 0.5f,
+                TopColor = ColorRgb.Bytes(170, 50, 60), SideColor = ColorRgb.Bytes(140, 40, 50), BottomColor = ColorRgb.Bytes(120, 40, 45),
+                TextureNoise = 0.05f,
+            });
+            Add(new BlockDefinition
+            {
                 Type = BlockType.Water, Name = "Water", Category = BlockCategory.Natural,
                 IsSolid = false, IsOpaque = false, IsFluid = true, IsMinable = false,
                 TopColor = ColorRgb.Bytes(40, 90, 140), SideColor = ColorRgb.Bytes(40, 90, 140), BottomColor = ColorRgb.Bytes(40, 90, 140),
@@ -325,6 +359,7 @@ namespace VoxelBuild.Core
         }
 
         public static bool IsFluid(BlockType t) => Get(t).IsFluid;
+        public static bool IsFloor(BlockType t) => Get(t).IsFloor;
 
         private static void Add(BlockDefinition def)
         {
@@ -390,6 +425,15 @@ namespace VoxelBuild.Core
                 case BlockType.CarpentryBench:
                     Set(d, SurfaceStyle.CarpentryTop, SurfaceStyle.Bark, SurfaceStyle.LogEnd, 0.3f, false, false);
                     d.Accent = ColorRgb.Bytes(190, 190, 200); d.AccentMetallic = 0.95f; d.AccentSmoothness = 0.75f; break;
+                case BlockType.PlankFloor:
+                    Set(d, SurfaceStyle.Planks, SurfaceStyle.Planks, SurfaceStyle.Planks, 0.4f, false, false);
+                    d.Accent = ColorRgb.Bytes(120, 90, 55); break;
+                case BlockType.StoneTiles:
+                    Set(d, SurfaceStyle.Tiles, SurfaceStyle.Stone, SurfaceStyle.Stone, 0.45f, true, false);
+                    d.Accent = ColorRgb.Bytes(90, 88, 90); break;
+                case BlockType.Carpet:
+                    Set(d, SurfaceStyle.Fabric, SurfaceStyle.Fabric, SurfaceStyle.Fabric, 0.1f, true, false);
+                    d.Accent = ColorRgb.Bytes(230, 200, 120); break;
                 default:
                     break;
             }

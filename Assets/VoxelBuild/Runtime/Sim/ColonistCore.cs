@@ -5,6 +5,7 @@ namespace VoxelBuild.Sim
 {
     using VoxelBuild.Core;
     using VoxelBuild.Nav;
+    using VoxelBuild.World;
     using VoxelBuild.Sim.Jobs;
 
     public enum MoveMode
@@ -341,8 +342,11 @@ namespace VoxelBuild.Sim
             {
                 case WorkType.Mine:
                 {
-                    var d = jobs.FindNearest(Cell, DesignationKind.Mine, this, now,
-                        x => BlockRegistry.Get(Ctx.World.GetBlock(x.Cell)).IsMinable);
+                    var d = jobs.FindNearest(Cell, DesignationKind.Mine, this, now, x =>
+                    {
+                        var b = Ctx.World.GetBlock(x.Cell);
+                        return BlockRegistry.Get(b).IsMinable || (b == BlockType.Air && Ctx.World.HasFloor(x.Cell));
+                    });
                     return d != null ? new MineJob(d) : null;
                 }
                 case WorkType.Build:

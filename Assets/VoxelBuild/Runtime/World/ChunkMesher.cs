@@ -77,6 +77,7 @@ namespace VoxelBuild.World
             public Int3 SizeInBlocks => new Int3(int.MaxValue, int.MaxValue, int.MaxValue);
             public bool InBounds(Int3 p) => true;
             public BlockType GetBlock(Int3 p) => cells.TryGetValue(p, out var t) ? t : BlockType.Air;
+            public BlockType GetFloor(Int3 p) => BlockType.Air;
             public void Set(Int3 p, BlockType t) => cells[p] = t;
         }
 
@@ -128,6 +129,9 @@ namespace VoxelBuild.World
                     {
                         var p = new Int3(origin.x + lx, wy, origin.z + lz);
                         var type = world.GetBlock(p);
+                        var floor = world.GetFloor(p);
+                        if (floor != BlockType.Air && !BlockRegistry.IsSolid(type))
+                            AddFloorSlab(world, p, lx, ly, lz, floor, blockSize, data);
                         if (type == BlockType.Air) continue;
                         var def = BlockRegistry.Get(type);
 
@@ -179,6 +183,60 @@ namespace VoxelBuild.World
             if (neighbour.y > sliceY) return true;
             if (!world.InBounds(neighbour)) return neighbour.y >= 0; // hide the underside of the world floor
             return !BlockRegistry.IsOpaque(world.GetBlock(neighbour));
+        }
+
+        // ------------------------------------------------------------------ Floors
+
+        /// <summary>Thickness of a floor tile as a fraction of a block.</summary>
+        public const float FloorThickness = 0.12f;
+
+        private static void AddFloorSlab(IBlockQuery world, Int3 p, int lx, int ly, int lz, BlockType floor, float blockSize, MeshData data)
+        {
+            var def = BlockRegistry.Get(floor);
+            int rot = RotationFor(def, p, (int)Direction.PosY);
+            AddSlabFace(data, lx, ly, lz, Direction.PosY, def.TileTop, blockSize, rot);
+            var below = p + Int3.Down;
+            if (!world.InBounds(below) || !BlockRegistry.IsOpaque(world.GetBlock(below)))
+                AddSlabFace(data, lx, ly, lz, Direction.NegY, def.TileBottom, blockSize, 0);
+            for (int i = 0; i < 4; i++)
+            {
+                var n = p + Directions.Horizontal[i];
+                if (world.InBounds(n) && (BlockRegistry.IsOpaque(world.GetBlock(n)) || world.GetFloor(n) == floor)) continue;
+                AddSlabFace(data, lx, ly, lz, DirectionOf(Directions.Horizontal[i]), def.TileSide, blockSize, 0);
+            }
+        }
+
+        private static void AddSlabFace(MeshData data, int lx, int ly, int lz, Direction face, int tile, float blockSize, int rotation)
+        {
+            int f = (int)face;
+            var corners = FaceCorners[f];
+            var normal = FaceNormals[f];
+            int baseIndex = data.VertexCount;
+            AtlasLayout.GetUvRect(tile, out float u0, out float v0, out float u1, out float v1);
+            for (int i = 0; i < 4; i++)
+            {
+                float cx = corners[i * 3], cy = corners[i * 3 + 1], cz = corners[i * 3 + 2];
+                if (cy > 0.5f) cy = FloorThickness;
+                data.Positions.Add((lx + cx) * blockSize);
+                data.Positions.Add((ly + cy) * blockSize);
+                data.Positions.Add((lz + cz) * blockSize);
+                data.Normals.Add(normal[0]);
+                data.Normals.Add(normal[1]);
+                data.Normals.Add(normal[2]);
+                int c = (i + rotation) & 3;
+                float uu = c == 0 || c == 1 ? u0 : u1;
+                float vv = c == 1 || c == 2 ? v1 : v0;
+                // Side faces only show a thin strip of the tile.
+                if (face != Direction.PosY && face != Direction.NegY && (c == 1 || c == 2)) vv = v0 + (v1 - v0) * FloorThickness;
+                data.Uvs.Add(uu);
+                data.Uvs.Add(vv);
+            }
+            data.Triangles.Add(baseIndex);
+            data.Triangles.Add(baseIndex + 1);
+            data.Triangles.Add(baseIndex + 2);
+            data.Triangles.Add(baseIndex);
+            data.Triangles.Add(baseIndex + 2);
+            data.Triangles.Add(baseIndex + 3);
         }
 
         // ------------------------------------------------------------------ Fluids

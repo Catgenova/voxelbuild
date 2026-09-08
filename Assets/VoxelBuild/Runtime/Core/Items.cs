@@ -23,6 +23,7 @@ namespace VoxelBuild.Core
         Torch,
         Bucket,
         WaterBucket,
+        Carpet,
         Count,
     }
 
@@ -84,6 +85,7 @@ namespace VoxelBuild.Core
             Add(ItemType.Torch, "Torch", ItemCategory.Furniture, ColorRgb.Bytes(255, 190, 80), stack: 20);
             Add(ItemType.Bucket, "Bucket", ItemCategory.Tool, ColorRgb.Bytes(160, 130, 90), stack: 4);
             Add(ItemType.WaterBucket, "Water Bucket", ItemCategory.Tool, ColorRgb.Bytes(60, 120, 200), stack: 4);
+            Add(ItemType.Carpet, "Carpet", ItemCategory.Material, ColorRgb.Bytes(170, 50, 60), stack: 30);
         }
 
         private static void Add(ItemType type, string name, ItemCategory cat, ColorRgb color, float nutrition = 0f, int stack = 50)

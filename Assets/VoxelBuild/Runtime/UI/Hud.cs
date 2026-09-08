@@ -11,6 +11,7 @@ namespace VoxelBuild.UI
     using VoxelBuild.Player;
     using VoxelBuild.Rendering;
     using VoxelBuild.Sim;
+    using VoxelBuild.World;
 
     /// <summary>The in-game HUD: clock and speed, tools, colonist roster, context panel, resources and log.</summary>
     public sealed class Hud : MonoBehaviour
@@ -422,8 +423,11 @@ namespace VoxelBuild.UI
         {
             var block = ctx.World.GetBlock(cell);
             var def = BlockRegistry.Get(block);
-            contextTitle.text = def.Name;
+            var floor = ctx.World.GetFloor(cell);
+            contextTitle.text = block == BlockType.Air && floor != BlockType.Air ? BlockRegistry.Get(floor).Name : def.Name;
             UiFactory.Label(contextBody, $"Position {cell}", 12, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
+            if (floor != BlockType.Air)
+                UiFactory.Label(contextBody, $"Floor: {BlockRegistry.Get(floor).Name}" + (FloorRules.IsSupported(ctx.World, cell) ? "" : "  (unsupported!)"), 12);
 
             if (block == BlockType.Water)
             {
@@ -452,9 +456,9 @@ namespace VoxelBuild.UI
                 UiFactory.Label(contextBody, orderText, 12);
                 UiFactory.Button(contextBody, "Cancel order", () => ctx.Jobs.Cancel(cell), 0f, 26f);
             }
-            else if (def.IsMinable)
+            else if (def.IsMinable || (block == BlockType.Air && floor != BlockType.Air))
             {
-                UiFactory.Button(contextBody, "Mine this block", () => ctx.Jobs.AddMine(cell), 0f, 26f);
+                UiFactory.Button(contextBody, block == BlockType.Air ? "Remove floor" : "Mine this block", () => ctx.Jobs.AddMine(cell), 0f, 26f);
             }
 
             if (RecipeRegistry.IsWorkshop(block))

@@ -142,8 +142,11 @@ namespace VoxelBuild.Player
             Int3 blockCell = default, adjacentCell = default;
             if (hitTerrain)
             {
-                blockCell = worldRenderer.WorldToCell(hit.point - hit.normal * (bs * 0.5f));
-                adjacentCell = worldRenderer.WorldToCell(hit.point + hit.normal * (bs * 0.5f));
+                // A hair inside / outside the surface: works for full blocks and for thin floor slabs alike.
+                float eps = bs * 0.02f;
+                blockCell = worldRenderer.WorldToCell(hit.point - hit.normal * eps);
+                adjacentCell = worldRenderer.WorldToCell(hit.point + hit.normal * eps);
+                if (adjacentCell == blockCell) adjacentCell = blockCell + new Int3(Mathf.RoundToInt(hit.normal.x), Mathf.RoundToInt(hit.normal.y), Mathf.RoundToInt(hit.normal.z));
             }
 
             bool useAdjacent = CurrentTool == Tool.Stockpile || CurrentTool == Tool.Drain || CurrentTool == Tool.Pour;
@@ -203,7 +206,10 @@ namespace VoxelBuild.Player
         {
             switch (BuildPlacement)
             {
-                case Placement.Above: return blockCell + Int3.Up;
+                case Placement.Above:
+                    // Floors go into the cell above the pointed block; on a floor slab, the slab's own cell.
+                    if (BlockRegistry.Get(BuildType).IsFloor && ctx.World.HasFloor(blockCell) && !ctx.World.IsSolid(blockCell)) return blockCell;
+                    return blockCell + Int3.Up;
                 case Placement.Below: return blockCell + Int3.Down;
                 case Placement.Beside:
                 {

@@ -65,6 +65,19 @@ namespace VoxelBuild.Sim
         {
             this.world = world;
             world.BlockChanged += OnBlockChanged;
+            world.FloorChanged += OnFloorChanged;
+        }
+
+        private void OnFloorChanged(Int3 pos, BlockType oldFloor, BlockType newFloor)
+        {
+            if (!designations.TryGetValue(pos, out var d)) return;
+            bool invalid = (d.Kind == DesignationKind.Build && BlockRegistry.IsFloor(d.BuildType) && newFloor == d.BuildType)
+                           || (d.Kind == DesignationKind.Mine && newFloor == BlockType.Air && world.GetBlock(pos) == BlockType.Air);
+            if (invalid)
+            {
+                designations.Remove(pos);
+                Changed?.Invoke();
+            }
         }
 
         public IEnumerable<Designation> Designations => designations.Values;
@@ -77,7 +90,8 @@ namespace VoxelBuild.Sim
         {
             if (!world.InBounds(cell)) return false;
             var def = BlockRegistry.Get(world.GetBlock(cell));
-            if (def.Type == BlockType.Air || !def.IsMinable) return false;
+            bool floorOnly = def.Type == BlockType.Air && world.HasFloor(cell);
+            if (!floorOnly && (def.Type == BlockType.Air || !def.IsMinable)) return false;
             if (designations.TryGetValue(cell, out var existing) && existing.Kind == DesignationKind.Mine) return false;
             designations[cell] = new Designation { Kind = DesignationKind.Mine, Cell = cell };
             Changed?.Invoke();
@@ -87,9 +101,18 @@ namespace VoxelBuild.Sim
         public bool AddBuild(Int3 cell, BlockType type)
         {
             if (!world.InBounds(cell)) return false;
-            var current = world.GetBlock(cell);
-            if (current != BlockType.Air && current != BlockType.Water) return false;
-            if (!BlockRegistry.Get(type).IsBuildable) return false;
+            var def = BlockRegistry.Get(type);
+            if (!def.IsBuildable) return false;
+            if (def.IsFloor)
+            {
+                if (world.GetFloor(cell) == type) return false;
+                if (!FloorRules.CanPlace(world, cell)) return false;
+            }
+            else
+            {
+                var current = world.GetBlock(cell);
+                if (current != BlockType.Air && current != BlockType.Water) return false;
+            }
             if (designations.TryGetValue(cell, out var existing) && existing.Kind == DesignationKind.Build && existing.BuildType == type)
                 return false;
             designations[cell] = new Designation { Kind = DesignationKind.Build, Cell = cell, BuildType = type };
@@ -258,8 +281,10 @@ namespace VoxelBuild.Sim
             // A mined-out mine order or an occupied build site is no longer valid.
             if (designations.TryGetValue(pos, out var d))
             {
-                bool invalid = (d.Kind == DesignationKind.Mine && newType == BlockType.Air)
-                               || (d.Kind == DesignationKind.Build && newType != BlockType.Air && newType != BlockType.Water)
+                bool floorBuild = d.Kind == DesignationKind.Build && BlockRegistry.IsFloor(d.BuildType);
+                bool invalid = (d.Kind == DesignationKind.Mine && newType == BlockType.Air && !world.HasFloor(pos))
+                               || (d.Kind == DesignationKind.Build && !floorBuild && newType != BlockType.Air && newType != BlockType.Water)
+                               || (floorBuild && BlockRegistry.IsSolid(newType))
                                || (d.Kind == DesignationKind.Drain && newType != BlockType.Water)
                                || (d.Kind == DesignationKind.Pour && BlockRegistry.IsSolid(newType));
                 if (invalid)

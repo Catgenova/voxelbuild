@@ -4,6 +4,7 @@ namespace VoxelBuild.Sim.Jobs
 {
     using VoxelBuild.Core;
     using VoxelBuild.Nav;
+    using VoxelBuild.World;
 
     /// <summary>Walk within reach of a designated block and dig it out. The drop goes into the colonist's pack.</summary>
     public sealed class MineJob : Job
@@ -28,12 +29,13 @@ namespace VoxelBuild.Sim.Jobs
             var jobs = c.Ctx.Jobs;
             if (!jobs.IsActive(d)) return JobStatus.Done;
             var block = c.Ctx.World.GetBlock(d.Cell);
-            if (block == BlockType.Air)
+            bool floorOnly = block == BlockType.Air && c.Ctx.World.HasFloor(d.Cell);
+            if (block == BlockType.Air && !floorOnly)
             {
                 jobs.Complete(d);
                 return JobStatus.Done;
             }
-            var def = BlockRegistry.Get(block);
+            var def = BlockRegistry.Get(floorOnly ? c.Ctx.World.GetFloor(d.Cell) : block);
             if (!def.IsMinable)
             {
                 jobs.Complete(d);
@@ -59,12 +61,13 @@ namespace VoxelBuild.Sim.Jobs
                 return JobStatus.Running;
             }
 
-            c.Activity = "Mining " + def.Name;
+            c.Activity = (floorOnly ? "Removing " : "Mining ") + def.Name;
             c.FaceTowards(d.Cell);
             d.WorkDone += dt * c.Needs.Efficiency;
             if (d.WorkDone < def.MineSeconds * Scale.WorkTimeFactor) return JobStatus.Running;
 
-            c.Ctx.World.SetBlock(d.Cell, BlockType.Air);
+            if (floorOnly) c.Ctx.World.SetFloor(d.Cell, BlockType.Air);
+            else c.Ctx.World.SetBlock(d.Cell, BlockType.Air);
             if (!def.Drop.IsEmpty)
             {
                 int added = c.Inventory.Add(def.Drop.Type, def.Drop.Count);
@@ -109,13 +112,21 @@ namespace VoxelBuild.Sim.Jobs
             var ctx = c.Ctx;
             var jobs = ctx.Jobs;
             if (!jobs.IsActive(d)) return JobStatus.Done;
+            var def = BlockRegistry.Get(d.BuildType);
             var currentBlock = ctx.World.GetBlock(d.Cell);
-            if (currentBlock != BlockType.Air && currentBlock != BlockType.Water)
+            if (def.IsFloor)
+            {
+                if (ctx.World.GetFloor(d.Cell) == d.BuildType || BlockRegistry.IsSolid(currentBlock))
+                {
+                    jobs.Complete(d);
+                    return JobStatus.Done;
+                }
+            }
+            else if (currentBlock != BlockType.Air && currentBlock != BlockType.Water)
             {
                 jobs.Complete(d);
                 return JobStatus.Done;
             }
-            var def = BlockRegistry.Get(d.BuildType);
             var cost = def.BuildCost;
 
             switch (phase)
@@ -180,7 +191,7 @@ namespace VoxelBuild.Sim.Jobs
                         phase = Phase.Travel;
                         return JobStatus.Running;
                     }
-                    if (ctx.IsCellOccupied(d.Cell, c))
+                    if (!def.IsFloor && ctx.IsCellOccupied(d.Cell, c))
                     {
                         c.Activity = "Waiting for space";
                         waitTime += dt;
@@ -196,12 +207,36 @@ namespace VoxelBuild.Sim.Jobs
                     d.WorkDone += dt * c.Needs.Efficiency;
                     if (d.WorkDone < def.BuildSeconds * Scale.WorkTimeFactor) return JobStatus.Running;
 
+                    if (def.IsFloor)
+                    {
+                        if (!FloorRules.CanPlace(ctx.World, d.Cell))
+                        {
+                            ctx.Log($"{c.Name}: no support for {def.Name} at {d.Cell}");
+                            jobs.Complete(d);
+                            return JobStatus.Failed;
+                        }
+                        var oldFloor = ctx.World.GetFloor(d.Cell);
+                        c.Inventory.Remove(cost.Type, cost.Count);
+                        if (oldFloor != BlockType.Air) DropFloor(ctx, d.Cell, oldFloor);
+                        ctx.World.SetFloor(d.Cell, d.BuildType);
+                        jobs.Complete(d);
+                        return JobStatus.Done;
+                    }
+                    // A solid block pushes any floor tile in the cell out as an item.
+                    var displaced = ctx.World.GetFloor(d.Cell);
                     c.Inventory.Remove(cost.Type, cost.Count);
                     ctx.World.SetBlock(d.Cell, d.BuildType);
+                    if (displaced != BlockType.Air) DropFloor(ctx, d.Cell, displaced);
                     jobs.Complete(d);
                     return JobStatus.Done;
                 }
             }
+        }
+
+        public static void DropFloor(GameContext ctx, Int3 cell, BlockType floor)
+        {
+            var drop = BlockRegistry.Get(floor).Drop;
+            if (!drop.IsEmpty) ctx.Items.AddNear(cell, drop.Type, drop.Count);
         }
 
         public override void OnEnd(ColonistCore c, JobStatus status)

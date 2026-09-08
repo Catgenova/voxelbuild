@@ -47,6 +47,13 @@ namespace VoxelBuild.Core
                 Output = new ItemStack(ItemType.Torch, 4), WorkSeconds = 3f, Station = BlockType.CarpentryBench,
             });
 
+            Recipes.Add(new Recipe
+            {
+                Id = "carpet", Name = "Weave Carpet",
+                Inputs = new[] { new ItemStack(ItemType.Planks, 1), new ItemStack(ItemType.Berries, 1) },
+                Output = new ItemStack(ItemType.Carpet, 2), WorkSeconds = 4f, Station = BlockType.CarpentryBench,
+            });
+
             // Workbench: stone.
             Recipes.Add(new Recipe
             {

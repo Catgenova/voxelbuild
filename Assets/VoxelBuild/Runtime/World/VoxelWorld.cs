@@ -11,12 +11,40 @@ namespace VoxelBuild.World
         Int3 SizeInBlocks { get; }
         bool InBounds(Int3 p);
         BlockType GetBlock(Int3 p);
+        /// <summary>Floor tile on the bottom plane of the cell, or Air for none.</summary>
+        BlockType GetFloor(Int3 p);
     }
 
     public static class BlockQueryExtensions
     {
         public static bool IsSolid(this IBlockQuery q, Int3 p) => BlockRegistry.IsSolid(q.GetBlock(p));
         public static bool IsAir(this IBlockQuery q, Int3 p) => q.GetBlock(p) == BlockType.Air;
+        public static bool HasFloor(this IBlockQuery q, Int3 p) => q.GetFloor(p) != BlockType.Air;
+    }
+
+    /// <summary>Rules for the floor layer that sits between block layers.</summary>
+    public static class FloorRules
+    {
+        /// <summary>A floor needs a solid block in the layer directly below it within this many cells horizontally.</summary>
+        public const int SupportRadius = 3;
+
+        public static bool IsSupported(IBlockQuery world, Int3 cell)
+        {
+            int y = cell.y - 1;
+            if (y < 0) return false;
+            for (int dz = -SupportRadius; dz <= SupportRadius; dz++)
+                for (int dx = -SupportRadius; dx <= SupportRadius; dx++)
+                    if (world.IsSolid(new Int3(cell.x + dx, y, cell.z + dz))) return true;
+            return false;
+        }
+
+        /// <summary>Whether a floor tile may be placed in the cell right now.</summary>
+        public static bool CanPlace(IBlockQuery world, Int3 cell)
+        {
+            if (!world.InBounds(cell) || cell.y < 1) return false;
+            if (world.IsSolid(cell)) return false;
+            return IsSupported(world, cell);
+        }
     }
 
     /// <summary>
@@ -40,6 +68,29 @@ namespace VoxelBuild.World
 
         /// <summary>Fired with a chunk coordinate whenever that chunk (or a neighbour edge) needs remeshing.</summary>
         public event Action<Int3> ChunkDirtied;
+
+        /// <summary>Fired after a floor tile changes: position, old floor, new floor (Air = none).</summary>
+        public event Action<Int3, BlockType, BlockType> FloorChanged;
+
+        private readonly Dictionary<Int3, BlockType> floors = new Dictionary<Int3, BlockType>();
+
+        public BlockType GetFloor(Int3 p) => floors.TryGetValue(p, out var f) ? f : BlockType.Air;
+
+        public IEnumerable<KeyValuePair<Int3, BlockType>> Floors => floors;
+
+        /// <summary>Sets or clears (Air) the floor tile of a cell. Returns true if it changed.</summary>
+        public bool SetFloor(Int3 p, BlockType floor)
+        {
+            if (!InBounds(p)) return false;
+            var old = GetFloor(p);
+            if (old == floor) return false;
+            if (floor == BlockType.Air) floors.Remove(p);
+            else floors[p] = floor;
+            Version++;
+            FloorChanged?.Invoke(p, old, floor);
+            DirtyCell(p);
+            return true;
+        }
 
         public VoxelWorld(Int3 sizeInChunks)
         {
@@ -96,6 +147,12 @@ namespace VoxelBuild.World
             var old = c.Get(lx, ly, lz);
             if (!c.Set(lx, ly, lz, type)) return false;
             Version++;
+            // A solid block fills the cell, so any floor tile in it is gone.
+            if (BlockRegistry.IsSolid(type) && floors.TryGetValue(p, out var oldFloor))
+            {
+                floors.Remove(p);
+                FloorChanged?.Invoke(p, oldFloor, BlockType.Air);
+            }
             BlockChanged?.Invoke(p, old, type);
             if (ChunkDirtied != null)
             {

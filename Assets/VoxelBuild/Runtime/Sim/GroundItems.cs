@@ -22,6 +22,7 @@ namespace VoxelBuild.Sim
         {
             this.world = world;
             world.BlockChanged += OnBlockChanged;
+            world.FloorChanged += OnFloorChanged;
         }
 
         public IEnumerable<Int3> Cells => cells.Keys;
@@ -111,9 +112,9 @@ namespace VoxelBuild.Sim
             // If inside a solid block, rise until free.
             int guard = 0;
             while (world.InBounds(c) && world.IsSolid(c) && guard++ < 64) c += Int3.Up;
-            // Fall until resting on something solid.
+            // Fall until resting on something solid or on a floor tile.
             guard = 0;
-            while (world.InBounds(c + Int3.Down) && !world.IsSolid(c + Int3.Down) && guard++ < 256) c += Int3.Down;
+            while (world.InBounds(c + Int3.Down) && !world.IsSolid(c + Int3.Down) && !world.HasFloor(c) && guard++ < 256) c += Int3.Down;
             return c;
         }
 
@@ -170,6 +171,12 @@ namespace VoxelBuild.Sim
         }
 
         /// <summary>Moves any pile displaced by a block change to a valid resting cell.</summary>
+        /// <summary>A removed floor lets the pile on it fall.</summary>
+        public void OnFloorChanged(Int3 pos, BlockType oldFloor, BlockType newFloor)
+        {
+            if (oldFloor != BlockType.Air && newFloor == BlockType.Air) Relocate(pos);
+        }
+
         private void OnBlockChanged(Int3 pos, BlockType oldType, BlockType newType)
         {
             bool nowSolid = BlockRegistry.IsSolid(newType);

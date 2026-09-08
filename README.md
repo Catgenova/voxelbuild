@@ -99,6 +99,11 @@ Tests/EditMode/      NUnit tests for the engine-free layers
   equalise sideways, waking only cells near a change so still lakes are free. Lakes are flood-filled
   below sea level at generation. Colonists wade water up to two blocks deep and treat deeper water as
   impassable. The surface is a transparent Lit material with box refraction and a drifting ripple map.
+- **Floor layer.** Every cell has a floor plane at its bottom. Colonists stand on a solid block or on
+  a floor tile; with neither they walk on whatever is below. Plank Floor, Stone Tiles and Carpet are
+  laid with the Build tool (they need a solid block within three cells in the layer directly beneath),
+  removed with Mine, pushed out as items when a solid block is built over them, and collapse when
+  their support is mined away. A floor above the head counts as a ceiling.
 - **Trees fall.** Cutting a log frees everything above it that no longer rests on the ground: the
   trunk and its attached canopy topple away from the woodcutter (a one-off mesh rotating about the
   base), and the logs land along the fall line as pick-up items. Cut the middle and only the top comes

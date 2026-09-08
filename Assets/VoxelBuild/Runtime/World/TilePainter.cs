@@ -114,6 +114,7 @@ namespace VoxelBuild.World
                 case SurfaceStyle.Brick: return 2.4f;
                 case SurfaceStyle.WorkbenchTop: return 1.5f;
                 case SurfaceStyle.CarpentryTop: return 1.6f;
+                case SurfaceStyle.Tiles: return 1.8f;
                 case SurfaceStyle.BedTop: return 1.2f;
                 default: return 1f;
             }
@@ -144,6 +145,7 @@ namespace VoxelBuild.World
                 case SurfaceStyle.Brick: return Brick(u, v, seed, baseColor, def.Accent, def.Smoothness);
                 case SurfaceStyle.WorkbenchTop: return WorkbenchTop(u, v, seed, baseColor, def);
                 case SurfaceStyle.CarpentryTop: return CarpentryTop(u, v, seed, baseColor, def);
+                case SurfaceStyle.Tiles: return Tiles(u, v, seed, baseColor, def.Accent, def.Smoothness);
                 case SurfaceStyle.BedTop: return BedTop(u, v, seed, baseColor, def.Accent);
                 case SurfaceStyle.Fabric: return Fabric(u, v, seed, baseColor, 0.15f);
                 case SurfaceStyle.TorchSide: return TorchSide(u, v, seed, baseColor, def);
@@ -446,6 +448,33 @@ namespace VoxelBuild.World
                 s.Smoothness *= 0.6f;
             }
             return s;
+        }
+
+        /// <summary>Square floor tiles with grout lines, each tile a slightly different shade and polish.</summary>
+        private static Sample Tiles(float u, float v, int seed, ColorRgb c, ColorRgb grout, float smooth)
+        {
+            const int n = 3;
+            int tx = (int)(u * n), ty = (int)(v * n);
+            float wu = u * n - tx, wv = v * n - ty;
+            const float g = 0.05f;
+            if (wu < g || wu > 1f - g || wv < g || wv > 1f - g)
+            {
+                float grit = Fbm(u, v, 40, seed + 5, 2);
+                return new Sample { Albedo = grout * (0.8f + 0.3f * grit), Height = 0.15f + 0.1f * grit, Smoothness = 0.1f };
+            }
+            uint id = Noise.HashU(tx, ty, 0, seed);
+            float veinsA = Fbm(u, v, 6, seed + 1, 3);
+            float ridge = Math.Abs(veinsA * 2f - 1f);
+            float polish = 0.7f + 0.6f * H(id, 2);
+            var col = c * ((0.85f + 0.25f * H(id, 1)) * (0.9f + 0.2f * veinsA));
+            if (ridge < 0.04f) col = col * 0.8f;
+            float bevel = Math.Min(Math.Min(wu - g, 1f - g - wu), Math.Min(wv - g, 1f - g - wv));
+            return new Sample
+            {
+                Albedo = col,
+                Height = 0.5f + 0.4f * Clamp01(bevel / 0.06f),
+                Smoothness = smooth * polish,
+            };
         }
 
         private static Sample Brick(float u, float v, int seed, ColorRgb c, ColorRgb mortar, float smooth)

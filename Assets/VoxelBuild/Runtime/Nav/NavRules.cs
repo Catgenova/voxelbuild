@@ -38,6 +38,8 @@ namespace VoxelBuild.Nav
                 var t = world.GetBlock(c);
                 if (BlockRegistry.IsSolid(t)) return false;
                 if (i >= WadeDepth && BlockRegistry.IsFluid(t)) return false;
+                // A floor tile above the feet is a ceiling.
+                if (i > 0 && world.HasFloor(c)) return false;
             }
             return true;
         }
@@ -50,6 +52,7 @@ namespace VoxelBuild.Nav
         {
             if (!world.InBounds(feet)) return false;
             if (!HasClearance(world, feet)) return false;
+            if (world.HasFloor(feet)) return true;
             var below = feet + Int3.Down;
             if (!world.InBounds(below)) return false;
             if (world.IsSolid(below)) return true;

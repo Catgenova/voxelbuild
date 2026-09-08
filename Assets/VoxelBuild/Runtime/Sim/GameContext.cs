@@ -19,6 +19,7 @@ namespace VoxelBuild.Sim
         public readonly BlockIndex Index;
         public readonly FluidSim Fluids;
         public readonly TreeFeller Trees;
+        public readonly FloorKeeper Floors;
         public readonly List<ColonistCore> Colonists = new List<ColonistCore>();
         public readonly Random Random;
 
@@ -36,6 +37,7 @@ namespace VoxelBuild.Sim
             Index = new BlockIndex(world);
             Fluids = new FluidSim(world);
             Trees = new TreeFeller(this);
+            Floors = new FloorKeeper(this);
             Random = new Random(seed);
         }
 
