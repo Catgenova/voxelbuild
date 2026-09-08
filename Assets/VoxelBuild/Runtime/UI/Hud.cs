@@ -26,6 +26,8 @@ namespace VoxelBuild.UI
         private readonly Button[] speedButtons = new Button[4];
         private readonly Dictionary<Tool, Button> toolButtons = new Dictionary<Tool, Button>();
         private readonly Dictionary<BlockType, Button> blockButtons = new Dictionary<BlockType, Button>();
+        private readonly Dictionary<Placement, Button> placementButtons = new Dictionary<Placement, Button>();
+        private Text heightText;
         private RectTransform blockList;
         private RectTransform colonistBar;
         private RectTransform contextPanel;
@@ -134,6 +136,17 @@ namespace VoxelBuild.UI
             AddToolButton(panel, Tool.Drain, "Drain water  [6]");
             AddToolButton(panel, Tool.Pour, "Pour water  [7]");
 
+            UiFactory.Label(panel, "Place block", 15, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
+            var placeRow = UiFactory.Row(panel, "Placement", 2f);
+            AddPlacementButton(placeRow, Placement.Face, "Face");
+            AddPlacementButton(placeRow, Placement.Above, "Above");
+            AddPlacementButton(placeRow, Placement.Beside, "Beside");
+            AddPlacementButton(placeRow, Placement.Below, "Below");
+            var heightRow = UiFactory.Row(panel, "Height", 2f);
+            UiFactory.Button(heightRow, "-", () => tools.SetBuildHeight(tools.BuildHeight - 1), 26f, 24f);
+            heightText = UiFactory.Label(heightRow, "1 high", 13, TextAnchor.MiddleCenter);
+            UiFactory.Button(heightRow, "+", () => tools.SetBuildHeight(tools.BuildHeight + 1), 26f, 24f);
+
             UiFactory.Label(panel, "Build with", 15, TextAnchor.MiddleLeft, UiFactory.DimTextColor);
             blockList = UiFactory.Group(panel, "Blocks");
             UiFactory.Vertical(blockList, 2f, 0);
@@ -145,13 +158,18 @@ namespace VoxelBuild.UI
             }
 
             hintText = UiFactory.Label(panel,
-                "WASD pan  ·  Q/E rotate  ·  Scroll zoom\nPgUp/PgDn or Ctrl+Scroll: view level\nRight-click: back to Select  ·  Space: pause\nCtrl +/- : UI scale",
+                "WASD pan  ·  Q/E rotate  ·  Scroll zoom\nPgUp/PgDn or Ctrl+Scroll: view level\nBuild: Tab placement, R/F height\nRight-click: back to Select  ·  Space: pause\nCtrl +/- : UI scale",
                 12, TextAnchor.UpperLeft, UiFactory.DimTextColor);
         }
 
         private void AddToolButton(RectTransform panel, Tool tool, string label)
         {
             toolButtons[tool] = UiFactory.Button(panel, label, () => tools.SetTool(tool));
+        }
+
+        private void AddPlacementButton(RectTransform row, Placement placement, string label)
+        {
+            placementButtons[placement] = UiFactory.Button(row, label, () => tools.SetPlacement(placement), 0f, 24f, 12);
         }
 
         private void BuildResourcePanel(RectTransform root)
@@ -247,6 +265,8 @@ namespace VoxelBuild.UI
         {
             foreach (var kv in toolButtons) UiFactory.SetActive(kv.Value, kv.Key == tools.CurrentTool);
             foreach (var kv in blockButtons) UiFactory.SetActive(kv.Value, tools.CurrentTool == Tool.Build && kv.Key == tools.BuildType);
+            foreach (var kv in placementButtons) UiFactory.SetActive(kv.Value, kv.Key == tools.BuildPlacement);
+            if (heightText != null) heightText.text = tools.BuildHeight == 1 ? "1 high" : $"{tools.BuildHeight} high";
         }
 
         private void RefreshSpeedButtons()

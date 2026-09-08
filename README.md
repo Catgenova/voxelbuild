@@ -26,6 +26,8 @@ object, the camera, the sun and the HDRP volume. The default world is 48 m × 24
 | `1`–`5` | Select / Mine / Build / Stockpile / Cancel tool |
 | `6` / `7` | Drain water / Pour water orders (need a bucket) |
 | Left-drag | Apply the current tool to a box of blocks |
+| `Tab` (Build) | Cycle placement: in front of the pointed face, above, beside, or below the pointed block |
+| `R` / `F` (Build) | Build height: extrude the dragged footprint into a wall (Shift for 4 at a time) |
 | Right-click / `Esc` | Back to the Select tool, then clear selection |
 | `Space` | Pause / resume |
 
