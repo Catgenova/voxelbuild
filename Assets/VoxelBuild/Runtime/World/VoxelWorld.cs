@@ -122,6 +122,27 @@ namespace VoxelBuild.World
             if (ChunkInBounds(chunkCoord)) ChunkDirtied?.Invoke(chunkCoord);
         }
 
+        /// <summary>Requests a remesh of one chunk without changing blocks.</summary>
+        public void DirtyChunk(Int3 chunkCoord)
+        {
+            if (ChunkInBounds(chunkCoord)) ChunkDirtied?.Invoke(chunkCoord);
+        }
+
+        /// <summary>Requests a remesh of the chunk holding <paramref name="p"/> (and edge neighbours) without changing blocks.</summary>
+        public void DirtyCell(Int3 p)
+        {
+            if (!InBounds(p) || ChunkDirtied == null) return;
+            var c = ChunkCoordOf(p);
+            ChunkDirtied(c);
+            int lx = p.x & 15, ly = p.y & 15, lz = p.z & 15;
+            if (lx == 0) DirtyNeighbour(c + Int3.Left);
+            if (lx == ChunkSize - 1) DirtyNeighbour(c + Int3.Right);
+            if (ly == 0) DirtyNeighbour(c + Int3.Down);
+            if (ly == ChunkSize - 1) DirtyNeighbour(c + Int3.Up);
+            if (lz == 0) DirtyNeighbour(c + Int3.Back);
+            if (lz == ChunkSize - 1) DirtyNeighbour(c + Int3.Forward);
+        }
+
         public bool IsSolid(Int3 p) => BlockRegistry.IsSolid(GetBlock(p));
         public bool IsAir(Int3 p) => GetBlock(p) == BlockType.Air;
 

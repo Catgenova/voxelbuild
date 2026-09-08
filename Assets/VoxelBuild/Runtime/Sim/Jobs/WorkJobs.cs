@@ -108,7 +108,8 @@ namespace VoxelBuild.Sim.Jobs
             var ctx = c.Ctx;
             var jobs = ctx.Jobs;
             if (!jobs.IsActive(d)) return JobStatus.Done;
-            if (ctx.World.GetBlock(d.Cell) != BlockType.Air)
+            var currentBlock = ctx.World.GetBlock(d.Cell);
+            if (currentBlock != BlockType.Air && currentBlock != BlockType.Water)
             {
                 jobs.Complete(d);
                 return JobStatus.Done;

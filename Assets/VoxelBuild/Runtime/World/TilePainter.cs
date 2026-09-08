@@ -72,6 +72,26 @@ namespace VoxelBuild.World
             return px;
         }
 
+        /// <summary>A tileable ripple height field for the water surface normal map.</summary>
+        public static TilePixels PaintWater(int size, int seed = 4242)
+        {
+            var px = new TilePixels(size) { NormalStrength = 0.9f };
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float u = (x + 0.5f) / size, v = (y + 0.5f) / size;
+                    float broad = Fbm(u, v, 3, seed, 2);
+                    float ripples = Fbm(u, v, 12, seed + 3, 3);
+                    float chop = Aniso(u, v, 24, 6, seed + 9, 2);
+                    int i = px.Index(x, y);
+                    px.Height[i] = Clamp01(0.5f + 0.3f * (broad - 0.5f) + 0.35f * (ripples - 0.5f) + 0.2f * (chop - 0.5f));
+                    px.Albedo[i] = ColorRgb.White;
+                    px.Smoothness[i] = 0.95f;
+                    px.AO[i] = 1f;
+                }
+            return px;
+        }
+
         private static float StrengthFor(SurfaceStyle style)
         {
             switch (style)

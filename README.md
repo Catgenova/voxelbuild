@@ -83,6 +83,12 @@ Tests/EditMode/      NUnit tests for the engine-free layers
   art allows, so the repetition is hard to spot. The same height field drives HDRP pixel displacement
   (parallax occlusion mapping), so pebbles, cracks and mortar lines have real apparent depth; the
   relief depth and sample count are exposed on the `Game` object.
+- **Crystal and water refract.** Crystal faces go to their own transparent submesh with HDRP's sphere
+  refraction (index 1.6, cyan transmittance) plus the facet normal map and emissive glow. Water is a
+  `Water` block whose cells carry a fill level; `Sim/FluidSim.cs` lets water fall, then spread and
+  equalise sideways, waking only cells near a change so still lakes are free. Lakes are flood-filled
+  below sea level at generation. Colonists wade water up to two blocks deep and treat deeper water as
+  impassable. The surface is a transparent Lit material with box refraction and a drifting ripple map.
 - **HDR without hassle.** Materials are cloned from the pipeline's default Lit material so shaders are
   always included in builds. Overlays use HDRP emissive with exposure weight 0 so they read the same at
   noon and midnight.
@@ -97,7 +103,7 @@ haul, eat, sleep) driven purely through `GameContext.Tick`.
 ## Roadmap
 
 - Save / load (chunk RLE + colonist state)
-- Water and falling blocks (sand, gravel)
+- Falling blocks (sand, gravel), infinite water sources and buckets
 - More needs (recreation, warmth), moods with consequences, skills that speed up work
 - Farming, cooking, and a proper food chain
 - Threats: wildlife, weather, raids

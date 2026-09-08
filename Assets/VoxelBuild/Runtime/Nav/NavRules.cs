@@ -19,6 +19,8 @@ namespace VoxelBuild.Nav
         public const int ReachHorizontal = Scale.Reach;
         public const int ReachDown = Scale.ReachDown;
         public const int ReachUp = Scale.ReachUp;
+        /// <summary>Water depth (cells) a colonist can wade through; deeper water is impassable.</summary>
+        public const int WadeDepth = 2;
 
         public static bool IsPassable(IBlockQuery world, Int3 cell)
         {
@@ -26,26 +28,40 @@ namespace VoxelBuild.Nav
             return !world.IsSolid(cell);
         }
 
-        /// <summary>True if the column from the cell upward is clear for a colonist.</summary>
+        /// <summary>True if the column from the cell upward is clear for a colonist. Water is allowed up to wading depth.</summary>
         public static bool HasClearance(IBlockQuery world, Int3 feet)
         {
             for (int i = 0; i < Clearance; i++)
             {
                 var c = feet + new Int3(0, i, 0);
                 if (!world.InBounds(c)) return i > 0; // allow heads poking above the world ceiling
-                if (world.IsSolid(c)) return false;
+                var t = world.GetBlock(c);
+                if (BlockRegistry.IsSolid(t)) return false;
+                if (i >= WadeDepth && BlockRegistry.IsFluid(t)) return false;
             }
             return true;
         }
 
-        /// <summary>A cell is standable if it has clearance and rests on a solid block.</summary>
+        /// <summary>
+        /// A cell is standable if it has clearance and rests on a solid block, or on shallow water that itself
+        /// rests on a solid block (wading).
+        /// </summary>
         public static bool IsStandable(IBlockQuery world, Int3 feet)
         {
             if (!world.InBounds(feet)) return false;
             if (!HasClearance(world, feet)) return false;
             var below = feet + Int3.Down;
-            return world.InBounds(below) && world.IsSolid(below);
+            if (!world.InBounds(below)) return false;
+            if (world.IsSolid(below)) return true;
+            if (WadeDepth >= 2 && BlockRegistry.IsFluid(world.GetBlock(below)))
+            {
+                var bed = below + Int3.Down;
+                return world.InBounds(bed) && world.IsSolid(bed);
+            }
+            return false;
         }
+
+        public static bool IsInWater(IBlockQuery world, Int3 feet) => BlockRegistry.IsFluid(world.GetBlock(feet));
 
         /// <summary>Whether a colonist standing at <paramref name="feet"/> can work on <paramref name="target"/>.</summary>
         public static bool CanReach(Int3 feet, Int3 target)

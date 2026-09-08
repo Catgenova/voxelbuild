@@ -20,6 +20,9 @@ See README.md for the design and the module map.
 - Block looks are procedural: `BlockRegistry.ApplyStyle` assigns a `SurfaceStyle` per face and
   `World/TilePainter.cs` paints it (albedo, height, metallic, smoothness, emissive). Add a style
   there rather than importing textures; keep painters tileable (use the periodic noise helpers).
+- Water is a block plus a level map in `Sim/FluidSim.cs`; never set `BlockType.Water` directly from
+  gameplay code, go through the sim so levels stay consistent. Rendering of fluids and crystal goes
+  through the extra buffers of `ChunkMesher.Build`.
 - The scene is generated at runtime by `GameBootstrap`. Do not hand-author prefabs; extend the
   bootstrap or the relevant renderer.
 

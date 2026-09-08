@@ -18,7 +18,12 @@ namespace VoxelBuild.Rendering
         public Texture2D Mask { get; private set; }
         public Texture2D Emissive { get; private set; }
         public Texture2D Height { get; private set; }
+        public Texture2D WaterNormal { get; private set; }
         public Material TerrainMaterial { get; private set; }
+        /// <summary>Refractive material for translucent solids (crystal), sharing the atlases.</summary>
+        public Material CrystalMaterial { get; private set; }
+        /// <summary>Animated refractive water surface.</summary>
+        public Material WaterMaterial { get; private set; }
 
         public static Color ToColor(ColorRgb c) => new Color(c.r, c.g, c.b, 1f);
 
@@ -115,7 +120,89 @@ namespace VoxelBuild.Rendering
             }
             HDMaterial.ValidateMaterial(mat);
             atlas.TerrainMaterial = mat;
+
+            atlas.CrystalMaterial = CreateCrystalMaterial(atlas);
+            var waterPx = TilePainter.PaintWater(128);
+            atlas.WaterNormal = MakeTexture("WaterNormal", 128, ComputeNormals(waterPx), true, FilterMode.Trilinear);
+            atlas.WaterNormal.wrapMode = TextureWrapMode.Repeat;
+            atlas.WaterMaterial = CreateWaterMaterial(atlas.WaterNormal);
             return atlas;
+        }
+
+        /// <summary>
+        /// Crystal: HDRP Lit in transparent mode with sphere refraction. Light entering the block bends by the
+        /// index of refraction and is tinted by the transmittance colour over the block's thickness, while the
+        /// facet normal map and emissive glow come from the shared atlases.
+        /// </summary>
+        private static Material CreateCrystalMaterial(BlockAtlas atlas)
+        {
+            var mat = CreateLitMaterial("Crystal");
+            mat.SetTexture("_BaseColorMap", atlas.Albedo);
+            mat.SetColor("_BaseColor", new Color(0.8f, 0.95f, 1f, 0.35f));
+            mat.SetTexture("_NormalMap", atlas.Normal);
+            mat.SetFloat("_NormalScale", 1.2f);
+            mat.SetTexture("_MaskMap", atlas.Mask);
+            mat.SetFloat("_SmoothnessRemapMin", 0.85f);
+            mat.SetFloat("_SmoothnessRemapMax", 1f);
+            mat.SetTexture("_EmissiveColorMap", atlas.Emissive);
+            mat.SetColor("_EmissiveColor", Color.white * 4f);
+            mat.SetFloat("_EmissiveExposureWeight", 0.2f);
+            SetTransparent(mat, sortPriority: 1);
+            mat.SetFloat("_RefractionModel", 2f);              // sphere
+            mat.SetFloat("_Ior", 1.6f);
+            mat.SetFloat("_Thickness", Scale.BlockSize);
+            mat.SetFloat("_ThicknessMultiplier", 1f);
+            mat.SetColor("_TransmittanceColor", new Color(0.55f, 0.9f, 1f, 1f));
+            mat.SetFloat("_ATDistance", 0.4f);
+            mat.EnableKeyword("_NORMALMAP");
+            mat.EnableKeyword("_MASKMAP");
+            mat.EnableKeyword("_EMISSIVE_COLOR_MAP");
+            mat.EnableKeyword("_REFRACTION_SPHERE");
+            HDMaterial.ValidateMaterial(mat);
+            return mat;
+        }
+
+        /// <summary>Water: transparent Lit with box refraction, deep blue transmittance and a scrolling ripple normal map.</summary>
+        private static Material CreateWaterMaterial(Texture2D normal)
+        {
+            var mat = CreateLitMaterial("Water");
+            mat.SetColor("_BaseColor", new Color(0.25f, 0.5f, 0.7f, 0.3f));
+            mat.SetTexture("_NormalMap", normal);
+            mat.SetFloat("_NormalScale", 0.6f);
+            mat.SetFloat("_Smoothness", 0.96f);
+            mat.SetFloat("_Metallic", 0f);
+            SetTransparent(mat, sortPriority: 0);
+            mat.SetFloat("_RefractionModel", 1f);              // box (planar slab)
+            mat.SetFloat("_Ior", 1.33f);
+            mat.SetFloat("_Thickness", 1.5f);
+            mat.SetFloat("_ThicknessMultiplier", 1f);
+            mat.SetColor("_TransmittanceColor", new Color(0.15f, 0.45f, 0.6f, 1f));
+            mat.SetFloat("_ATDistance", 2.5f);
+            mat.SetFloat("_DoubleSidedEnable", 0f);
+            mat.EnableKeyword("_NORMALMAP");
+            mat.EnableKeyword("_REFRACTION_PLANE");
+            HDMaterial.ValidateMaterial(mat);
+            return mat;
+        }
+
+        /// <summary>Common HDRP transparent-surface setup; ValidateMaterial derives the blend state and render queue.</summary>
+        private static void SetTransparent(Material mat, int sortPriority)
+        {
+            mat.SetFloat("_SurfaceType", 1f);                  // transparent
+            mat.SetFloat("_BlendMode", 0f);                    // alpha
+            mat.SetFloat("_AlphaCutoffEnable", 0f);
+            mat.SetFloat("_EnableBlendModePreserveSpecularLighting", 1f);
+            mat.SetFloat("_EnableFogOnTransparent", 1f);
+            mat.SetFloat("_TransparentSortPriority", sortPriority);
+            mat.SetFloat("_TransparentDepthPrepassEnable", 0f);
+            mat.SetFloat("_TransparentDepthPostpassEnable", 0f);
+            mat.SetFloat("_TransparentBackfaceEnable", 0f);
+            mat.SetFloat("_ZWrite", 0f);
+            mat.SetFloat("_ReceivesSSR", 0f);
+            mat.SetFloat("_ReceivesSSRTransparent", 1f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.EnableKeyword("_BLENDMODE_PRESERVE_SPECULAR_LIGHTING");
+            mat.EnableKeyword("_ENABLE_FOG_ON_TRANSPARENT");
         }
 
         /// <summary>

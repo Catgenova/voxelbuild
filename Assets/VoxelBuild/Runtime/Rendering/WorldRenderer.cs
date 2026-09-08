@@ -16,6 +16,8 @@ namespace VoxelBuild.Rendering
         public float FrameBudgetMs = 5f;
 
         private VoxelWorld world;
+        private IFluidLevels fluids;
+        private Material waterMaterial;
         private float blockSize;
         private ChunkView[] views;
         private readonly HashSet<Int3> dirty = new HashSet<Int3>();
@@ -43,10 +45,12 @@ namespace VoxelBuild.Rendering
             }
         }
 
-        public void Init(VoxelWorld world, Material material, float blockSize)
+        public void Init(VoxelWorld world, BlockAtlas atlas, IFluidLevels fluids, float blockSize)
         {
             this.world = world;
+            this.fluids = fluids;
             this.blockSize = blockSize;
+            waterMaterial = atlas.WaterMaterial;
             sliceY = MaxSliceY;
             var sc = world.SizeInChunks;
             views = new ChunkView[sc.x * sc.y * sc.z];
@@ -56,7 +60,7 @@ namespace VoxelBuild.Rendering
                 var go = new GameObject($"Chunk {chunk.Coord}");
                 go.transform.SetParent(transform, false);
                 var view = go.AddComponent<ChunkView>();
-                view.Init(chunk.Coord, material, blockSize, TerrainLayer);
+                view.Init(chunk.Coord, atlas.TerrainMaterial, atlas.CrystalMaterial, atlas.WaterMaterial, blockSize, TerrainLayer);
                 views[i++] = view;
                 dirty.Add(chunk.Coord);
             }
@@ -72,7 +76,7 @@ namespace VoxelBuild.Rendering
         /// <summary>Synchronously rebuilds every dirty chunk (used at startup).</summary>
         public void RebuildAllNow()
         {
-            foreach (var c in dirty) FindView(c).Rebuild(world, sliceY, blockSize);
+            foreach (var c in dirty) FindView(c).Rebuild(world, fluids, sliceY, blockSize);
             dirty.Clear();
         }
 
@@ -84,6 +88,12 @@ namespace VoxelBuild.Rendering
 
         private void Update()
         {
+            // Drift the ripple normal map so lakes look alive (all maps share the base map's UV transform).
+            if (waterMaterial != null)
+            {
+                float t = Time.time;
+                waterMaterial.SetTextureOffset("_BaseColorMap", new Vector2(t * 0.02f, t * 0.013f));
+            }
             if (dirty.Count == 0) return;
             dirtyList.Clear();
             dirtyList.AddRange(dirty);
@@ -92,7 +102,7 @@ namespace VoxelBuild.Rendering
             float start = Time.realtimeSinceStartup;
             foreach (var c in dirtyList)
             {
-                FindView(c).Rebuild(world, sliceY, blockSize);
+                FindView(c).Rebuild(world, fluids, sliceY, blockSize);
                 dirty.Remove(c);
                 if ((Time.realtimeSinceStartup - start) * 1000f > FrameBudgetMs) break;
             }

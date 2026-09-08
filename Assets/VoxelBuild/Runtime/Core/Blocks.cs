@@ -26,6 +26,7 @@ namespace VoxelBuild.Core
         Workbench,
         Bed,
         Torch,
+        Water,
         Count,
     }
 
@@ -75,6 +76,10 @@ namespace VoxelBuild.Core
         public bool IsSolid = true;
         /// <summary>Hides neighbouring faces when rendering.</summary>
         public bool IsOpaque = true;
+        /// <summary>Solid but see-through (crystal): rendered in the refractive submesh.</summary>
+        public bool IsTranslucent;
+        /// <summary>A liquid handled by the fluid simulation.</summary>
+        public bool IsFluid;
         /// <summary>Whether it can be mined at all (bedrock cannot).</summary>
         public bool IsMinable = true;
         /// <summary>Work seconds required to mine it.</summary>
@@ -226,6 +231,7 @@ namespace VoxelBuild.Core
             Add(new BlockDefinition
             {
                 Type = BlockType.Crystal, Name = "Crystal", Category = BlockCategory.Ore, MineSeconds = 6.0f,
+                IsOpaque = false, IsTranslucent = true,
                 Drop = new ItemStack(ItemType.Crystal, 1),
                 TopColor = ColorRgb.Bytes(120, 220, 255), SideColor = ColorRgb.Bytes(120, 220, 255), BottomColor = ColorRgb.Bytes(120, 220, 255),
                 TextureNoise = 0.20f,
@@ -295,7 +301,16 @@ namespace VoxelBuild.Core
                 TextureNoise = 0.10f,
                 Emissive = new ColorRgb(1.2f, 0.7f, 0.25f),
             });
+            Add(new BlockDefinition
+            {
+                Type = BlockType.Water, Name = "Water", Category = BlockCategory.Natural,
+                IsSolid = false, IsOpaque = false, IsFluid = true, IsMinable = false,
+                TopColor = ColorRgb.Bytes(40, 90, 140), SideColor = ColorRgb.Bytes(40, 90, 140), BottomColor = ColorRgb.Bytes(40, 90, 140),
+                TextureNoise = 0.03f,
+            });
         }
+
+        public static bool IsFluid(BlockType t) => Get(t).IsFluid;
 
         private static void Add(BlockDefinition def)
         {

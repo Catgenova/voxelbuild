@@ -83,7 +83,8 @@ namespace VoxelBuild.Sim
         public bool AddBuild(Int3 cell, BlockType type)
         {
             if (!world.InBounds(cell)) return false;
-            if (world.GetBlock(cell) != BlockType.Air) return false;
+            var current = world.GetBlock(cell);
+            if (current != BlockType.Air && current != BlockType.Water) return false;
             if (!BlockRegistry.Get(type).IsBuildable) return false;
             if (designations.TryGetValue(cell, out var existing) && existing.Kind == DesignationKind.Build && existing.BuildType == type)
                 return false;
@@ -222,7 +223,7 @@ namespace VoxelBuild.Sim
             if (designations.TryGetValue(pos, out var d))
             {
                 bool invalid = (d.Kind == DesignationKind.Mine && newType == BlockType.Air)
-                               || (d.Kind == DesignationKind.Build && newType != BlockType.Air);
+                               || (d.Kind == DesignationKind.Build && newType != BlockType.Air && newType != BlockType.Water);
                 if (invalid)
                 {
                     designations.Remove(pos);

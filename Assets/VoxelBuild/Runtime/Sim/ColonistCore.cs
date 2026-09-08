@@ -219,6 +219,24 @@ namespace VoxelBuild.Sim
                     Mover.Teleport(ground);
                     StopMoving();
                 }
+                else if (NavRules.IsInWater(world, cell))
+                {
+                    // Deep water: scramble to the nearest wadable cell.
+                    for (int r = 1; r <= 6; r++)
+                        for (int dz = -r; dz <= r; dz++)
+                            for (int dx = -r; dx <= r; dx++)
+                            {
+                                if (Math.Abs(dx) != r && Math.Abs(dz) != r) continue;
+                                for (int dy = 2; dy >= -2; dy--)
+                                {
+                                    var p = cell + new Int3(dx, dy, dz);
+                                    if (!NavRules.IsStandable(world, p)) continue;
+                                    Mover.Teleport(p);
+                                    StopMoving();
+                                    return;
+                                }
+                            }
+                }
             }
         }
 
@@ -329,7 +347,8 @@ namespace VoxelBuild.Sim
                     var d = jobs.FindNearest(Cell, DesignationKind.Build, this, now, x =>
                     {
                         var cost = BlockRegistry.Get(x.BuildType).BuildCost;
-                        if (Ctx.World.GetBlock(x.Cell) != BlockType.Air) return false;
+                            var cur = Ctx.World.GetBlock(x.Cell);
+                        if (cur != BlockType.Air && cur != BlockType.Water) return false;
                         return Inventory.Has(cost.Type, cost.Count) || Ctx.Items.TotalOf(cost.Type) >= cost.Count;
                     });
                     return d != null ? new BuildJob(d) : null;

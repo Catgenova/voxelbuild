@@ -138,7 +138,7 @@ namespace VoxelBuild.Nav
 
                 if (NavRules.IsStandable(world, h))
                 {
-                    Add(outCells, outCosts, h, 1f);
+                    Add(outCells, outCosts, h, NavRules.IsInWater(world, h) ? 2.5f : 1f);
                     continue;
                 }
 
@@ -185,7 +185,7 @@ namespace VoxelBuild.Nav
                 var a = cur + new Int3(off.x, 0, 0);
                 var b = cur + new Int3(0, 0, off.z);
                 if (!NavRules.HasClearance(world, a) || !NavRules.HasClearance(world, b)) continue;
-                Add(outCells, outCosts, h, 1.4142f);
+                Add(outCells, outCosts, h, NavRules.IsInWater(world, h) ? 3.5f : 1.4142f);
             }
         }
 

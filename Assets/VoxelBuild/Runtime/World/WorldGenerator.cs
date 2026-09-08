@@ -20,6 +20,8 @@ namespace VoxelBuild.World
         /// <summary>Hill noise frequency per metre.</summary>
         public float HillFrequency = 0.05f;
         public float SoilDepthMetres = 1f;
+        /// <summary>Open ground below this height fills with water. Set below the lowest terrain to disable lakes.</summary>
+        public float SeaLevelMetres = 8.5f;
         /// <summary>Trees per square metre of grass.</summary>
         public float TreesPerSquareMetre = 0.05f;
         public float BushesPerSquareMetre = 0.025f;
@@ -105,6 +107,40 @@ namespace VoxelBuild.World
                 }
 
             PlaceVegetation(world, heights);
+            FloodLakes(world, heights);
+        }
+
+        /// <summary>
+        /// Fills open air below sea level with water, flood-filling from the surface so sealed caves under hills
+        /// stay dry while basins and any caves opening into them fill up.
+        /// </summary>
+        private void FloodLakes(VoxelWorld world, int[] heights)
+        {
+            int sea = Scale.Metres(SeaLevelMetres);
+            if (sea <= 1) return;
+            var size = world.SizeInBlocks;
+            var queue = new Queue<Int3>();
+            var seen = new HashSet<Int3>();
+            for (int z = 0; z < size.z; z++)
+                for (int x = 0; x < size.x; x++)
+                {
+                    int h = heights[z * size.x + x];
+                    if (h >= sea) continue;
+                    var seed = new Int3(x, sea - 1, z);
+                    if (world.GetBlock(seed) == BlockType.Air && seen.Add(seed)) queue.Enqueue(seed);
+                }
+            while (queue.Count > 0)
+            {
+                var c = queue.Dequeue();
+                world.SetBlockRaw(c, BlockType.Water);
+                for (int i = 0; i < 6; i++)
+                {
+                    var n = c + Directions.Offsets[i];
+                    if (n.y >= sea || n.y < 1 || !world.InBounds(n)) continue;
+                    if (world.GetBlock(n) != BlockType.Air) continue;
+                    if (seen.Add(n)) queue.Enqueue(n);
+                }
+            }
         }
 
         private Vein VeinAt(float mx, float my, float mz)

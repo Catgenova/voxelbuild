@@ -122,7 +122,7 @@ namespace VoxelBuild
 
             WorldRenderer = new GameObject("World").AddComponent<WorldRenderer>();
             WorldRenderer.transform.SetParent(transform, false);
-            WorldRenderer.Init(world, atlas.TerrainMaterial, BlockSize);
+            WorldRenderer.Init(world, atlas, Ctx.Fluids, BlockSize);
 
             ItemRenderer = new GameObject("Items").AddComponent<ItemRenderer>();
             ItemRenderer.transform.SetParent(transform, false);
