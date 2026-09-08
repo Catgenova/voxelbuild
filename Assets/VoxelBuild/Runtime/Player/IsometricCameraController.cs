@@ -19,6 +19,7 @@ namespace VoxelBuild.Player
 
         private Camera cam;
         private Bounds bounds;
+        private Bounds panBounds;
         private Vector3 focus;
         private float yaw = 45f;
         private float targetYaw = 45f;
@@ -32,6 +33,7 @@ namespace VoxelBuild.Player
         {
             cam = camera;
             bounds = worldBounds;
+            panBounds = ComputePanBounds(worldBounds, Pitch);
             focus = initialFocus;
             cam.orthographic = true;
             cam.nearClipPlane = 0.1f;
@@ -86,14 +88,28 @@ namespace VoxelBuild.Player
                 }
             }
 
-            focus.x = Mathf.Clamp(focus.x, bounds.min.x, bounds.max.x);
-            focus.z = Mathf.Clamp(focus.z, bounds.min.z, bounds.max.z);
+            focus.x = Mathf.Clamp(focus.x, panBounds.min.x, panBounds.max.x);
+            focus.z = Mathf.Clamp(focus.z, panBounds.min.z, panBounds.max.z);
             focus.y = Mathf.Clamp(focus.y, bounds.min.y, bounds.max.y);
 
             float k = 1f - Mathf.Exp(-Smoothing * dt);
             yaw = Mathf.LerpAngle(yaw, targetYaw, k);
             orthoSize = Mathf.Lerp(orthoSize, targetOrtho, k);
             Apply();
+        }
+
+        /// <summary>
+        /// In an isometric view a block far below the focus plane lines up with a surface point displaced towards the
+        /// camera by depth / tan(pitch). Widen the pan limits by that much (for the full world height) so every cell
+        /// at every level can be brought to the centre of the screen, whatever the yaw.
+        /// </summary>
+        public static Bounds ComputePanBounds(Bounds world, float pitchDegrees)
+        {
+            float tan = Mathf.Tan(Mathf.Clamp(pitchDegrees, 5f, 85f) * Mathf.Deg2Rad);
+            float margin = world.size.y / tan + 2f;
+            var b = world;
+            b.Expand(new Vector3(margin * 2f, 0f, margin * 2f));
+            return b;
         }
 
         private Vector3 GroundForward() => Quaternion.Euler(0f, yaw, 0f) * Vector3.forward;
